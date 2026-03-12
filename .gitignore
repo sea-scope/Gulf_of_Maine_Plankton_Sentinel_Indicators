@@ -1,0 +1,23 @@
+# Raw input data — too large for git (8.8 GB)
+Bioenergy_3D/
+
+# Intermediate pipeline outputs — fully reproducible
+processed/
+polygons/
+
+# R/IDE artifacts
+.Rhistory
+.Rapp.history
+.Rproj.user/
+*.Rcheck/
+
+# Large MATLAB data files
+*.mat
+
+# Word/PDF documents
+*.docx
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
