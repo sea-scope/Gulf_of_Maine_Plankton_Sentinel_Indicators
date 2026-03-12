@@ -81,14 +81,14 @@ cinar_polygons <- st_sf(
   CINAR_poly = c(7L, 3L, 6L, 8L, 1L, 2L, 4L, 5L),
   cinar_name = c("GMB150", "JB", "GeorgesNEC", "BOF", "WSS", "EGOM", "Browns", "Halifax"),
   geometry   = st_sfc(
-    make_sfc(read_poly(file.path(work_dir, "poly_GMB_150.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_JB_deep.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_GeorgesNEC.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_BOF_latlon.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_WSS_broad.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_EGOM_broad.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_Browns_line.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "poly_Halifax_line.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_GMB_150.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_JB_deep.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_GeorgesNEC.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_BOF_latlon.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_WSS_broad.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_EGOM_broad.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_Browns_line.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "poly_Halifax_line.csv")))[[1]],
     crs = 4326
   )
 )
@@ -108,10 +108,10 @@ cat("Loading EcoMon strata from EMstrata_v4_coords.csv...\n")
 # Reads polygon coordinates exported from EMstrata_v4.mat via the MATLAB snippet
 # in the README. Cached as ne_strata_cache.rds after first build.
 # Delete ne_strata_cache.rds to force a rebuild.
-strata_cache <- file.path(work_dir, "ne_strata_cache.rds")
+strata_cache <- file.path(work_dir, "cache", "ne_strata_cache.rds")
 
 if (!file.exists(strata_cache)) {
-  coords_file <- file.path(work_dir, "EMstrata_v4_coords.csv")
+  coords_file <- file.path(work_dir, "data", "EMstrata_v4_coords.csv")
   if (!file.exists(coords_file)) {
     stop(
       "EMstrata_v4_coords.csv not found.\n",

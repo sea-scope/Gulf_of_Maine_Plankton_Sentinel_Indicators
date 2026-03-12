@@ -112,7 +112,7 @@ for (poly_id in sort(unique(data_clean$CINAR_poly))) {
 
 # Draw polygon borders from poly_*.csv (no header: col 1 = lon, col 2 = lat)
 for (poly_id in names(poly_files)) {
-  fpath <- file.path(work_dir, poly_files[poly_id])
+  fpath <- file.path(work_dir, "data", poly_files[poly_id])
   if (file.exists(fpath)) {
     bnd <- read.csv(fpath, header = FALSE, col.names = c("lon", "lat"))
     polygon(bnd$lon, bnd$lat,

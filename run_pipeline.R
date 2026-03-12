@@ -141,16 +141,16 @@
 ## RUN THE PIPELINE
 ## ============================================================
 
-source("DFO_data_process.R")           # Step 1: RDS → processed/
-source("Data_layer_Polygons.R")        # Step 2: processed/ → polygons/
-source("DFO_data_polygon_summary.R")   # Step 3: polygons/ → summaries/
+source("R/DFO_data_process.R")           # Step 1: RDS → processed/
+source("R/Data_layer_Polygons.R")        # Step 2: processed/ → polygons/
+source("R/DFO_data_polygon_summary.R")   # Step 3: polygons/ → summaries/
 
-source("DFO_biomass_visualization_CINAR.R")   # Step 4a: CINAR biomass plots
-source("DFO_biomass_visualization_EcoMon.R")  # Step 4b: EcoMon biomass plots
+source("R/DFO_biomass_visualization_CINAR.R")   # Step 4a: CINAR biomass plots
+source("R/DFO_biomass_visualization_EcoMon.R")  # Step 4b: EcoMon biomass plots
 
-source("DFO_CINAR_polygon_map.R")              # Step 4e: CINAR polygon map
-source("DFO_EcoMon_strata_map.R")             # Step 4f: EcoMon strata map
-source("DFO_region_map.R")                    # Step 4g: CINAR + SBNMS region maps
+source("R/DFO_CINAR_polygon_map.R")              # Step 4e: CINAR polygon map
+source("R/DFO_EcoMon_strata_map.R")             # Step 4f: EcoMon strata map
+source("R/DFO_region_map.R")                    # Step 4g: CINAR + SBNMS region maps
 
 cat("\nPipeline complete. Output files:\n")
 cat("  processed/     — depth-integrated biomass per grid point\n")

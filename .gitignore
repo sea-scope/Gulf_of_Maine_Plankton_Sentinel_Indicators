@@ -1,23 +1,33 @@
+# -------------------------------------------------------
+# R session artifacts
+# -------------------------------------------------------
+.Rhistory
+.RData
+.Rproj.user/
+
+# -------------------------------------------------------
 # Raw input data — too large for git (8.8 GB)
+# Bioenergy_3D/*.RDS are public DFO model output files.
+# Download separately and place in Bioenergy_3D/ before running.
+# -------------------------------------------------------
 Bioenergy_3D/
 
-# Intermediate pipeline outputs — fully reproducible
+# -------------------------------------------------------
+# Pipeline-generated intermediates — reproducible from source
+# -------------------------------------------------------
 processed/
 polygons/
 
-# R/IDE artifacts
-.Rhistory
-.Rapp.history
-.Rproj.user/
-*.Rcheck/
-
-# Large MATLAB data files
-*.mat
-
-# Word/PDF documents
+# -------------------------------------------------------
+# Binary documents
+# -------------------------------------------------------
 *.docx
 *.pdf
+*.mat
 
-# OS
-.DS_Store
-Thumbs.db
+# -------------------------------------------------------
+# Keep these cache files (small, save re-download time):
+#   cache/gom_bathy.rda
+#   cache/gom_bathy_ecomon.rda
+#   cache/ne_strata_cache.rds
+# -------------------------------------------------------
