@@ -8,6 +8,7 @@
 ##
 ## Input files (repo root):
 ##   poly_*.csv          — pre-clipped CINAR polygon boundaries (from export_for_R.m)
+##   SBNMS.csv           — Stellwagen Bank NMS sanctuary boundary
 ##   EMstrata_v4_coords.csv — EcoMon stratum polygon coordinates (from EMstrata_v4.mat)
 ##   ne_strata_cache.rds — cached sf object built on first run; delete to rebuild
 ##
@@ -20,6 +21,7 @@
 ##   6 = GeorgesNEC (Georges Basin and NE Channel)
 ##   7 = GMB150 (Grand Manan Basin, 150 m isobath)
 ##   8 = BOF (Bay of Fundy)
+##   9 = SBNMS (Stellwagen Bank National Marine Sanctuary)
 ##   0 = Unassigned
 
 library(dplyr)
@@ -78,8 +80,8 @@ make_sfc <- function(mat) {
 cat("Loading pre-clipped CINAR polygon coordinate files...\n")
 
 cinar_polygons <- st_sf(
-  CINAR_poly = c(7L, 3L, 6L, 8L, 1L, 2L, 4L, 5L),
-  cinar_name = c("GMB150", "JB", "GeorgesNEC", "BOF", "WSS", "EGOM", "Browns", "Halifax"),
+  CINAR_poly = c(7L, 3L, 6L, 8L, 1L, 2L, 4L, 5L, 9L),
+  cinar_name = c("GMB150", "JB", "GeorgesNEC", "BOF", "WSS", "EGOM", "Browns", "Halifax", "SBNMS"),
   geometry   = st_sfc(
     make_sfc(read_poly(file.path(work_dir, "data", "poly_GMB_150.csv")))[[1]],
     make_sfc(read_poly(file.path(work_dir, "data", "poly_JB_deep.csv")))[[1]],
@@ -89,11 +91,12 @@ cinar_polygons <- st_sf(
     make_sfc(read_poly(file.path(work_dir, "data", "poly_EGOM_broad.csv")))[[1]],
     make_sfc(read_poly(file.path(work_dir, "data", "poly_Browns_line.csv")))[[1]],
     make_sfc(read_poly(file.path(work_dir, "data", "poly_Halifax_line.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "SBNMS.csv")))[[1]],
     crs = 4326
   )
 )
 
-cat(sprintf("CINAR polygon object: %d polygons\n", nrow(cinar_polygons)))
+cat(sprintf("CINAR polygon object: %d polygons (including SBNMS)\n", nrow(cinar_polygons)))
 
 # ===========================================================================
 # Load EcoMon strata

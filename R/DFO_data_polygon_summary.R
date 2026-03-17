@@ -8,12 +8,15 @@
 ##
 ## Output structure (one row per polygon × year × month):
 ##   polygon        — CINAR name ("WSS","EGOM","JB","Browns","Halifax",
-##                    "GeorgesNEC","GMB150","BOF") or "ecomon_<id>"
+##                    "GeorgesNEC","GMB150","BOF","SBNMS") or "ecomon_<id>"
 ##   n_observations — number of model grid points in that cell
+##   n_0_80         — number of grid points with non-NA shallow (0-80 m) biomass
+##   n_below_80     — number of grid points with non-NA deep (>80 m) biomass
 ##   mean/sd/min/max_cfin_0_80      — C. finmarchicus shallow 0-80 m (mg/m²)
 ##   mean/sd/min/max_cfin_below_80  — C. finmarchicus deep >80 m (mg/m²)
 ##   mean/sd/min/max_cfin_total     — C. finmarchicus full column (mg/m²)
 ##   (same set of columns for cgla = C. glacialis, chyp = C. hyperboreus)
+##   mean_bathy, sd_bathy           — bathymetry (m) of grid points in the polygon
 ##
 ## Notes:
 ##   - Rows with poly_id == 0 (no polygon assignment) are excluded.
@@ -35,13 +38,14 @@ if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
 # CINAR polygon ID → name lookup
 cinar_names <- c("1" = "WSS", "2" = "EGOM", "3" = "JB", "4" = "Browns",
-                 "5" = "Halifax", "6" = "GeorgesNEC", "7" = "GMB150", "8" = "BOF")
+                 "5" = "Halifax", "6" = "GeorgesNEC", "7" = "GMB150", "8" = "BOF",
+                 "9" = "SBNMS")
 
 biomass_cols <- c("sum_cfin_0_80", "sum_cgla_0_80", "sum_chyp_0_80",
                   "sum_cfin_below_80", "sum_cgla_below_80", "sum_chyp_below_80",
                   "sum_cfin_total", "sum_cgla_total", "sum_chyp_total")
 
-required_cols <- c("fYear", "month", "EcoMon_poly", "CINAR_poly", biomass_cols)
+required_cols <- c("fYear", "month", "bathymetry", "EcoMon_poly", "CINAR_poly", biomass_cols)
 
 # ---------------------------------------------------------------------------
 polygon_files <- list.files(input_dir, pattern = "_polygons\\.csv$", full.names = FALSE)
@@ -56,6 +60,10 @@ summarise_poly <- function(data, poly_col, label_fn) {
     group_by(fYear, month, poly_id = .data[[poly_col]]) %>%
     summarise(
       n_observations     = n(),
+      n_0_80             = sum(!is.na(sum_cfin_0_80)),
+      n_below_80         = sum(!is.na(sum_cfin_below_80)),
+      mean_bathy         = mean(bathymetry,         na.rm = TRUE),
+      sd_bathy           = sd(bathymetry,           na.rm = TRUE),
       mean_cfin_0_80     = mean(sum_cfin_0_80,     na.rm = TRUE),
       sd_cfin_0_80       = sd(sum_cfin_0_80,       na.rm = TRUE),
       min_cfin_0_80      = min(sum_cfin_0_80,       na.rm = TRUE),
@@ -97,7 +105,7 @@ summarise_poly <- function(data, poly_col, label_fn) {
     mutate(
       polygon = label_fn(poly_id),
       across(where(is.numeric), ~ifelse(is.infinite(.x), NA_real_, .x)),
-      across(where(is.numeric) & !matches("^n_observations$"), ~round(.x, 3))
+      across(where(is.numeric) & !matches("^(n_observations|n_0_80|n_below_80)$"), ~round(.x, 3))
     ) %>%
     select(fYear, month, polygon, n_observations, everything(), -poly_id)
 }
