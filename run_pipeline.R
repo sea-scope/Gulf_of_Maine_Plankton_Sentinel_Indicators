@@ -15,10 +15,11 @@
 ##   Output: processed/*_processed.csv
 ##
 ## Step 2 — Data_layer_Polygons.R
-##   Assigns each grid point to a CINAR region polygon and an EcoMon
-##   survey stratum using point-in-polygon (sf package).
+##   Assigns each grid point to a CINAR region polygon (including SBNMS)
+##   and an EcoMon survey stratum using point-in-polygon (sf package).
 ##   Input:  processed/*_processed.csv
 ##           poly_*.csv         (pre-clipped CINAR polygon boundaries)
+##           SBNMS.csv          (Stellwagen Bank NMS sanctuary boundary)
 ##           EMstrata_v4_coords.csv  (EcoMon stratum coordinates)
 ##   Output: polygons/*_processed_polygons.csv
 ##           ne_strata_cache.rds  (cached on first run)
@@ -31,16 +32,26 @@
 ##   Output: summaries/DFO_biomass_summary.csv
 ##
 ## Step 4a — DFO_biomass_visualization_CINAR.R
-##   8-panel seasonal biomass figures for all CINAR regions (shallow + deep).
-##   Species: C. finmarchicus only. Error bars = ±1 SD across grid points.
+##   Two figure types for all 9 CINAR regions (including SBNMS):
+##     Overview:  all years overlaid, ± 1 SD, one PNG per polygon × depth.
+##     Per-year:  climatological envelope + focus-year line, with bathy annotation.
+##   Species: C. finmarchicus only. Depth layers: shallow, deep, total.
 ##   Input:  summaries/DFO_biomass_summary.csv (CINAR rows)
-##   Output: figures/CINAR_biomass_shallow.png, figures/CINAR_biomass_deep.png
+##   Output: plots/cinar_overview/CINAR_<key>_{shallow,deep,total}.png
+##           plots/cinar_yearly/CINAR_<name>_<year>_{shallow,deep,total}.png
 ##
 ## Step 4b — DFO_biomass_visualization_EcoMon.R
-##   4-panel figure for EcoMon strata 36 and 37 (shallow + deep).
-##   Species: C. finmarchicus only.
+##   Same two figure types for ALL EcoMon strata in the summary.
+##   Species: C. finmarchicus only. Depth layers: shallow, deep, total.
 ##   Input:  summaries/DFO_biomass_summary.csv (EcoMon rows)
-##   Output: figures/Biomass_interannual_36_37.png
+##   Output: plots/ecomon_overview/EcoMon_stratum_<id>_{shallow,deep,total}.png
+##           plots/ecomon_yearly/EcoMon_<id>_<year>_{shallow,deep,total}.png
+##
+## Step 4c — export_viewer_metadata.R
+##   Exports plots/stations_metadata.json listing every polygon and stratum
+##   with its per-year PNG filename prefix, display label, type, and year range.
+##   Input:  summaries/DFO_biomass_summary.csv
+##   Output: plots/stations_metadata.json
 ##
 ## Step 4e — DFO_CINAR_polygon_map.R
 ##   QC map showing SPM grid point assignments to CINAR polygons.
@@ -70,6 +81,8 @@
 ##   higher-priority polygons using MATLAB polyshape subtract(). The
 ##   resulting CSVs are non-overlapping and committed to this repo.
 ##   Priority order: GMB150 > JB > GeorgesNEC > BOF > WSS > EGOM > Browns > Halifax
+##   SBNMS (Stellwagen Bank NMS) is added from SBNMS.csv without clipping
+##   (geographically distinct from the other 8 polygons).
 ##
 ## EcoMon strata (EMstrata_v4_coords.csv):
 ##   Strata indices 14-47 cover the Northwest Atlantic survey domain.
@@ -148,6 +161,8 @@ source("R/DFO_data_polygon_summary.R")   # Step 3: polygons/ → summaries/
 source("R/DFO_biomass_visualization_CINAR.R")   # Step 4a: CINAR biomass plots
 source("R/DFO_biomass_visualization_EcoMon.R")  # Step 4b: EcoMon biomass plots
 
+source("R/export_viewer_metadata.R")               # Step 4c: viewer metadata JSON
+
 source("R/DFO_CINAR_polygon_map.R")              # Step 4e: CINAR polygon map
 source("R/DFO_EcoMon_strata_map.R")             # Step 4f: EcoMon strata map
 source("R/DFO_region_map.R")                    # Step 4g: CINAR + SBNMS region maps
@@ -156,4 +171,9 @@ cat("\nPipeline complete. Output files:\n")
 cat("  processed/     — depth-integrated biomass per grid point\n")
 cat("  polygons/      — polygon-assigned grid points\n")
 cat("  summaries/     — DFO_biomass_summary.csv\n")
-cat("  figures/       — all plots\n")
+cat("  plots/stations_metadata.json — viewer metadata\n")
+cat("  figures/              — maps (polygon QC, strata, region)\n")
+cat("  plots/cinar_overview/ — CINAR all-years-overlaid figures\n")
+cat("  plots/cinar_yearly/   — CINAR per-year climatology figures\n")
+cat("  plots/ecomon_overview/— EcoMon all-years-overlaid figures\n")
+cat("  plots/ecomon_yearly/  — EcoMon per-year climatology figures\n")

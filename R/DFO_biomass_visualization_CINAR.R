@@ -1,450 +1,253 @@
 ## DFO_biomass_visualization_CINAR.R
 ## Step 4a of the DFO Calanus biomass workflow.
-## Generates seasonal biomass time-series plots for all 8 CINAR analysis regions.
-## Produces two 8-panel composite figures: shallow layer (0-80 m) and deep layer (>80 m).
 ##
-## Input:  summaries/DFO_biomass_summary.csv  (CINAR rows only; polygon column = short key)
-## Output: figures/CINAR_biomass_shallow.png
-##         figures/CINAR_biomass_deep.png
+## Two figure types per CINAR polygon:
 ##
-## Plot design:
-##   x-axis  — month (Jan–Dec tick marks; data typically Apr–Sep)
-##   y-axis  — mean biomass (mg/m²) ± 1 SD across grid points in each polygon-month-year
-##   color   — year, viridis plasma scale; legend shows every 4th year + final year
+##   1. Overview — one PNG per polygon per depth layer (shallow, deep, total).
+##      All years overlaid, viridis plasma colour scale, ± 1 SD error bars.
+##      Output: plots/cinar_overview/CINAR_<key>_{shallow,deep,total}.png
 ##
-## Species plotted: Calanus finmarchicus (cfin) only.
-##   C. glacialis (cgla) and C. hyperboreus (chyp) columns exist in the summary
-##   but are not currently visualized here.
+##   2. Per-year climatology comparison — one PNG per polygon × year × depth.
+##      Four layers back-to-front:
+##        a) Light envelope: historical range (max mean + SD to min mean - SD)
+##        b) Darker envelope: climatological mean ± 1 SD across years
+##        c) Dashed line: climatological mean
+##        d) Bold line + error bars: focus year (± 1 SD across grid points)
+##      Bathymetry annotation (mean ± SD) in top-right corner.
+##      Output: plots/cinar_yearly/CINAR_<display_name>_<year>_{shallow,deep,total}.png
 ##
-## CINAR polygon keys used in the 'polygon' column of the summary:
-##   "WSS"  "EGOM"  "JB"  "Browns"  "Halifax"  "GeorgesNEC"  "GMB150"  "BOF"
+## Biomass values are converted from mg m⁻² to g m⁻² (÷ 1000) for display.
 ##
-## Required packages: dplyr, ggplot2, viridis, scales, gridExtra, grid
-## Open SPM_calanus_biomass.Rproj before sourcing so getwd() = repo root.
+## Input:  summaries/DFO_biomass_summary.csv (CINAR rows)
+##
+## Required packages: dplyr, ggplot2, viridis, scales
 
 library(dplyr)
 library(ggplot2)
 library(viridis)
 library(scales)
-library(gridExtra)
-library(grid)
 
-# Repository root — set automatically from the current working directory.
-# Open the .Rproj file (or setwd() to the repo root) before sourcing.
 work_dir <- getwd()
 
-# Load combined summary and filter to CINAR rows (polygon names, not "ecomon_*")
+# ---------------------------------------------------------------------------
+# Load data and convert mg → g
+# ---------------------------------------------------------------------------
 all_summary   <- read.csv(file.path(work_dir, "summaries", "DFO_biomass_summary.csv"))
 cinar_summary <- all_summary %>% filter(!startsWith(polygon, "ecomon"))
 
-# Full region names for plot titles
-polygon_names <- c(
-  "WSS"       = "Western Scotian Shelf",
-  "EGOM"      = "Eastern Gulf of Maine",
-  "JB"        = "Jordan Basin",
-  "Browns"    = "Browns Bank",
-  "Halifax"   = "Eastern Scotian Shelf",
-  "GeorgesNEC"= "Georges Basin and NE Channel",
-  "GMB150"    = "Grand Manan Basin",
-  "BOF"       = "Bay of Fundy"
+# Convert all biomass mean/sd/min/max columns from mg to g
+biomass_cols <- grep("^(mean|sd|min|max)_(cfin|cgla|chyp)_", names(cinar_summary), value = TRUE)
+cinar_summary <- cinar_summary %>%
+  mutate(across(all_of(biomass_cols), ~ .x / 1000))
+
+# Polygon display names (for titles) and file-safe names (for filenames)
+polygon_info <- data.frame(
+  key          = c("WSS", "EGOM", "JB", "Browns", "Halifax",
+                   "GeorgesNEC", "GMB150", "BOF", "SBNMS"),
+  display_name = c("Western Scotian Shelf", "Eastern Gulf of Maine",
+                   "Jordan Basin", "Browns Bank", "Eastern Scotian Shelf",
+                   "Georges Basin and NE Channel", "Grand Manan Basin",
+                   "Bay of Fundy", "Stellwagen Bank NMS"),
+  file_name    = c("WesternScotianShelf", "EasternGOM",
+                   "JordanBasin", "BrownsBank", "EasternScotianShelf",
+                   "GeorgesNEC", "GrandManan", "BayOfFundy", "SBNMS"),
+  stringsAsFactors = FALSE
 )
 
-cat("Available CINAR polygons:", paste(sort(unique(cinar_summary$polygon)), collapse = ", "), "\n")
+cat("Available CINAR polygons:",
+    paste(sort(unique(cinar_summary$polygon)), collapse = ", "), "\n")
 
-# Function to extract legend
-get_legend <- function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
+# Output directories
+overview_dir <- file.path(work_dir, "plots", "cinar_overview")
+yearly_dir   <- file.path(work_dir, "plots", "cinar_yearly")
+if (!dir.exists(overview_dir)) dir.create(overview_dir, recursive = TRUE)
+if (!dir.exists(yearly_dir))   dir.create(yearly_dir,   recursive = TRUE)
 
-# Create plots for each CINAR polygon - SHALLOW LAYER (0-80m)
-cat("\n=== Creating Shallow Layer Plots ===\n")
+# Common aesthetics
+month_labels <- c("J","F","M","A","M","J","J","A","S","O","N","D")
+all_years     <- sort(unique(cinar_summary$fYear))
+legend_breaks <- unique(c(all_years[seq(1, length(all_years), by = 4)],
+                          max(all_years)))
 
-# WSS (1) - Shallow
-wss_data <- cinar_summary %>% filter(polygon == "WSS")
-if (nrow(wss_data) > 0) {
-  p1_shallow <- ggplot(wss_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
+# Depth layer definitions: column stems and labels
+depth_layers <- data.frame(
+  tag       = c("shallow",       "deep",              "total"),
+  mean_col  = c("mean_cfin_0_80","mean_cfin_below_80","mean_cfin_total"),
+  sd_col    = c("sd_cfin_0_80",  "sd_cfin_below_80",  "sd_cfin_total"),
+  label     = c("(0-80 m)",      "(>80 m)",           "(Total)"),
+  stringsAsFactors = FALSE
+)
+
+# ===========================================================================
+# Helper: overview plot (all years overlaid)
+# ===========================================================================
+make_overview <- function(df, y_col, sd_col, title) {
+  ggplot(df, aes(x = month, y = .data[[y_col]], color = factor(fYear))) +
     geom_line(size = 0.8, alpha = 0.8) +
     geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
+    geom_errorbar(aes(ymin = .data[[y_col]] - .data[[sd_col]],
+                      ymax = .data[[y_col]] + .data[[sd_col]]),
                   width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
+    scale_color_viridis_d(name = "Year", option = "plasma",
+                          breaks = legend_breaks) +
+    scale_x_continuous(breaks = 1:12, labels = month_labels) +
     scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["WSS"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p1_shallow <- ggplot() + labs(title = "WSS - No Data") + theme_void()
+    guides(color = guide_legend(ncol = min(length(unique(df$fYear)), 13))) +
+    labs(title = title, x = NULL, y = expression("Biomass (g m"^-2*")")) +
+    theme_minimal(base_size = 13) +
+    theme(legend.position = "bottom")
 }
 
-# EGOM (2) - Shallow
-egom_data <- cinar_summary %>% filter(polygon == "EGOM")
-if (nrow(egom_data) > 0) {
-  p2_shallow <- ggplot(egom_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
+# ===========================================================================
+# Helper: per-year climatology comparison plot
+# ===========================================================================
+make_year_plot <- function(poly_data, focus_year, y_col, sd_col,
+                           depth_label, display_name, bathy_text,
+                           n_text) {
+
+  # Climatology: mean and SD of the yearly spatial-means, by month
+  clim <- poly_data %>%
+    group_by(month) %>%
+    summarise(clim_mean = mean(.data[[y_col]], na.rm = TRUE),
+              clim_sd   = sd(.data[[y_col]],   na.rm = TRUE),
+              .groups = "drop") %>%
+    mutate(clim_sd = ifelse(is.na(clim_sd), 0, clim_sd))
+
+  # Historical range: max/min year means ± their spatial SDs
+  hist_range <- poly_data %>%
+    group_by(month) %>%
+    summarise(
+      max_mean = max(.data[[y_col]], na.rm = TRUE),
+      max_sd   = .data[[sd_col]][which.max(.data[[y_col]])],
+      min_mean = min(.data[[y_col]], na.rm = TRUE),
+      min_sd   = .data[[sd_col]][which.min(.data[[y_col]])],
+      .groups = "drop"
+    ) %>%
+    mutate(
+      hist_ymax = max_mean + max_sd,
+      hist_ymin = min_mean - min_sd
+    )
+
+  # Focus year
+  yr_data <- poly_data %>% filter(fYear == focus_year)
+
+  p <- ggplot() +
+    # Layer 0 (furthest back): historical range envelope
+    geom_ribbon(data = hist_range,
+                aes(x = month, ymin = hist_ymin, ymax = hist_ymax),
+                fill = "grey80", alpha = 0.5) +
+    # Layer 1: climatological mean ± SD envelope
+    geom_ribbon(data = clim,
+                aes(x = month,
+                    ymin = clim_mean - clim_sd,
+                    ymax = clim_mean + clim_sd),
+                fill = "grey50", alpha = 0.5) +
+    # Layer 2: climatological mean
+    geom_line(data = clim,
+              aes(x = month, y = clim_mean),
+              linetype = "dashed", color = "grey30", size = 0.7) +
+    # Layer 3: focus year with error bars
+    geom_errorbar(data = yr_data,
+                  aes(x = month,
+                      ymin = .data[[y_col]] - .data[[sd_col]],
+                      ymax = .data[[y_col]] + .data[[sd_col]]),
+                  width = 0.25, color = "#D55E00", alpha = 0.7) +
+    geom_line(data = yr_data,
+              aes(x = month, y = .data[[y_col]]),
+              color = "#D55E00", size = 1.2) +
+    geom_point(data = yr_data,
+               aes(x = month, y = .data[[y_col]]),
+               color = "#D55E00", size = 2.5) +
+    # Scales
+    scale_x_continuous(breaks = 1:12, labels = month_labels) +
     scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["EGOM"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p2_shallow <- ggplot() + labs(title = "EGOM - No Data") + theme_void()
+    labs(title = paste0(display_name, " ", depth_label, " \u2014 ", focus_year),
+         x = NULL,
+         y = expression("Biomass (g m"^-2*")")) +
+    # Bathymetry and sample size annotations
+    annotate("text", x = 11, y = Inf, label = bathy_text,
+             hjust = 1, vjust = 5.5, size = 5, color = "grey20") +
+    annotate("text", x = 11, y = Inf, label = n_text,
+             hjust = 1, vjust = 7.5, size = 5, color = "grey20") +
+    theme_minimal(base_size = 13) +
+    theme(
+      legend.position = "none"
+    )
+
+  p
 }
 
-# JB (3) - Shallow
-jb_data <- cinar_summary %>% filter(polygon == "JB")
-if (nrow(jb_data) > 0) {
-  p3_shallow <- ggplot(jb_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["JB"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p3_shallow <- ggplot() + labs(title = "JB - No Data") + theme_void()
+# ===========================================================================
+# Main loop over polygons
+# ===========================================================================
+for (i in seq_len(nrow(polygon_info))) {
+  pkey  <- polygon_info$key[i]
+  dname <- polygon_info$display_name[i]
+  fname <- polygon_info$file_name[i]
+
+  poly_data <- cinar_summary %>% filter(polygon == pkey)
+  if (nrow(poly_data) == 0) {
+    cat(sprintf("  %s: no data, skipping\n", pkey))
+    next
+  }
+
+  cat(sprintf("  %s: %d rows, years %d-%d\n", pkey, nrow(poly_data),
+              min(poly_data$fYear), max(poly_data$fYear)))
+
+  # Bathymetry annotation (constant across months/years — take first non-NA)
+  bathy_row <- poly_data %>% filter(!is.na(mean_bathy)) %>% slice(1)
+  if (nrow(bathy_row) > 0) {
+    bathy_text <- sprintf("Depth: %.0f \u00B1 %.0f m",
+                          bathy_row$mean_bathy, bathy_row$sd_bathy)
+  } else {
+    bathy_text <- ""
+  }
+
+  years <- sort(unique(poly_data$fYear))
+
+  # n_col mapping: depth tag → sample-size column in summary
+  n_col_map <- c(shallow = "n_0_80", deep = "n_below_80", total = "n_0_80")
+
+  for (dl in seq_len(nrow(depth_layers))) {
+    tag      <- depth_layers$tag[dl]
+    mean_col <- depth_layers$mean_col[dl]
+    sd_col   <- depth_layers$sd_col[dl]
+    d_label  <- depth_layers$label[dl]
+    n_col    <- n_col_map[tag]
+
+    # --- Overview figure ---
+    p_over <- make_overview(poly_data, mean_col, sd_col,
+                            paste0(dname, " \u2014 ", d_label))
+    ggsave(file.path(overview_dir, sprintf("CINAR_%s_%s.png", pkey, tag)),
+           p_over, width = 8, height = 6, dpi = 300, bg = "white")
+
+    # --- Per-year climatology figures ---
+    for (yr in years) {
+      yr_rows <- poly_data %>% filter(fYear == yr)
+      n_val   <- max(yr_rows[[n_col]], na.rm = TRUE)
+      out_path <- file.path(yearly_dir,
+                            sprintf("CINAR_%s_%d_%s.png", fname, yr, tag))
+
+      if (is.na(n_val) || n_val < 22) {
+        cat(sprintf("    Low n for %s %d %s (n = %s) — placeholder\n", pkey, yr, tag,
+                    ifelse(is.na(n_val), "NA", n_val)))
+        p_na <- ggplot() +
+          annotate("text", x = 0.5, y = 0.5,
+                   label = "Plot Not Available\nDue to Insufficient Datapoints",
+                   size = 10, fontface = "bold", hjust = 0.5, vjust = 0.5) +
+          theme_void()
+        ggsave(out_path, p_na, width = 8, height = 6, dpi = 300, bg = "white")
+        next
+      }
+      n_text <- sprintf("Data Points per Month = %d", n_val)
+
+      p_yr <- make_year_plot(poly_data, yr, mean_col, sd_col,
+                             d_label, dname, bathy_text, n_text)
+      ggsave(out_path, p_yr, width = 8, height = 6, dpi = 300, bg = "white")
+    }
+  }
 }
 
-# Browns (4) - Shallow
-browns_data <- cinar_summary %>% filter(polygon == "Browns")
-if (nrow(browns_data) > 0) {
-  p4_shallow <- ggplot(browns_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["Browns"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p4_shallow <- ggplot() + labs(title = "Browns - No Data") + theme_void()
-}
-
-# Halifax (5) - Shallow
-halifax_data <- cinar_summary %>% filter(polygon == "Halifax")
-if (nrow(halifax_data) > 0) {
-  p5_shallow <- ggplot(halifax_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["Halifax"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p5_shallow <- ggplot() + labs(title = "Halifax - No Data") + theme_void()
-}
-
-# GeorgesNEC (6) - Shallow
-georgesnec_data <- cinar_summary %>% filter(polygon == "GeorgesNEC")
-if (nrow(georgesnec_data) > 0) {
-  p6_shallow <- ggplot(georgesnec_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["GeorgesNEC"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p6_shallow <- ggplot() + labs(title = "GeorgesNEC - No Data") + theme_void()
-}
-
-# GMB150 (7) - Shallow
-gmb150_data <- cinar_summary %>% filter(polygon == "GMB150")
-if (nrow(gmb150_data) > 0) {
-  p7_shallow <- ggplot(gmb150_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["GMB150"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p7_shallow <- ggplot() + labs(title = "GMB150 - No Data") + theme_void()
-}
-
-# BOF (8) - Shallow
-bof_data <- cinar_summary %>% filter(polygon == "BOF")
-if (nrow(bof_data) > 0) {
-  p8_shallow <- ggplot(bof_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_0_80 - sd_cfin_0_80, ymax = mean_cfin_0_80 + sd_cfin_0_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["BOF"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p8_shallow <- ggplot() + labs(title = "BOF - No Data") + theme_void()
-}
-
-# Create shared legend for shallow layer with 12 columns
-if (nrow(wss_data) > 0 || nrow(egom_data) > 0 || nrow(jb_data) > 0 || nrow(browns_data) > 0 || 
-    nrow(halifax_data) > 0 || nrow(georgesnec_data) > 0 || nrow(gmb150_data) > 0 || nrow(bof_data) > 0) {
-  
-  # Use the first available dataset to create legend
-  legend_data <- NULL
-  if (nrow(wss_data) > 0) legend_data <- wss_data
-  else if (nrow(egom_data) > 0) legend_data <- egom_data
-  else if (nrow(jb_data) > 0) legend_data <- jb_data
-  else if (nrow(browns_data) > 0) legend_data <- browns_data
-  else if (nrow(halifax_data) > 0) legend_data <- halifax_data
-  else if (nrow(georgesnec_data) > 0) legend_data <- georgesnec_data
-  else if (nrow(gmb150_data) > 0) legend_data <- gmb150_data
-  else if (nrow(bof_data) > 0) legend_data <- bof_data
-  
-  legend_plot_shallow <- ggplot(legend_data, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    guides(color = guide_legend(ncol = 13)) +
-    theme_minimal() +
-    theme(legend.position = "top")
-  
-  shared_legend_shallow <- get_legend(legend_plot_shallow)
-  
-  # Combine plots with shared legend
-  shallow_combined <- grid.arrange(
-    shared_legend_shallow,
-    arrangeGrob(p1_shallow, p2_shallow, p3_shallow, p4_shallow,
-                p5_shallow, p6_shallow, p7_shallow, p8_shallow,
-                ncol = 4, nrow = 2),
-    heights = c(2, 10),
-    top = "Calanus finmarchicus Seasonal Biomass - Shallow Layer (0-80m) All CINAR Regions"
-  )
-} else {
-  shallow_combined <- grid.arrange(
-    p1_shallow, p2_shallow, p3_shallow, p4_shallow,
-    p5_shallow, p6_shallow, p7_shallow, p8_shallow,
-    ncol = 4, nrow = 2,
-    top = "Calanus finmarchicus Seasonal Biomass - Shallow Layer (0-80m) All CINAR Regions"
-  )
-}
-
-# Create plots for DEEP LAYER (>80m)
-cat("\n=== Creating Deep Layer Plots ===\n")
-
-# WSS (1) - Deep
-if (nrow(wss_data) > 0) {
-  p1_deep <- ggplot(wss_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["WSS"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p1_deep <- ggplot() + labs(title = "WSS - No Data") + theme_void()
-}
-
-# EGOM (2) - Deep
-if (nrow(egom_data) > 0) {
-  p2_deep <- ggplot(egom_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["EGOM"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p2_deep <- ggplot() + labs(title = "EGOM - No Data") + theme_void()
-}
-
-# JB (3) - Deep
-if (nrow(jb_data) > 0) {
-  p3_deep <- ggplot(jb_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["JB"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p3_deep <- ggplot() + labs(title = "JB - No Data") + theme_void()
-}
-
-# Browns (4) - Deep
-if (nrow(browns_data) > 0) {
-  p4_deep <- ggplot(browns_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["Browns"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p4_deep <- ggplot() + labs(title = "Browns - No Data") + theme_void()
-}
-
-# Halifax (5) - Deep
-if (nrow(halifax_data) > 0) {
-  p5_deep <- ggplot(halifax_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["Halifax"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p5_deep <- ggplot() + labs(title = "Halifax - No Data") + theme_void()
-}
-
-# GeorgesNEC (6) - Deep
-if (nrow(georgesnec_data) > 0) {
-  p6_deep <- ggplot(georgesnec_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["GeorgesNEC"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p6_deep <- ggplot() + labs(title = "GeorgesNEC - No Data") + theme_void()
-}
-
-# GMB150 (7) - Deep
-if (nrow(gmb150_data) > 0) {
-  p7_deep <- ggplot(gmb150_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["GMB150"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p7_deep <- ggplot() + labs(title = "GMB150 - No Data") + theme_void()
-}
-
-# BOF (8) - Deep
-if (nrow(bof_data) > 0) {
-  p8_deep <- ggplot(bof_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = mean_cfin_below_80 - sd_cfin_below_80, ymax = mean_cfin_below_80 + sd_cfin_below_80), 
-                  width = 0.2, alpha = 0.6) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    scale_x_continuous(breaks = 1:12, labels = c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")) +
-    scale_y_continuous(labels = comma_format()) +
-    labs(title = polygon_names["BOF"], x = "Month", y = "Biomass (mg/m²)") +
-    theme_minimal() +
-    theme(legend.position = "none", plot.title = element_text(size = 11))
-} else {
-  p8_deep <- ggplot() + labs(title = "BOF - No Data") + theme_void()
-}
-
-# Create shared legend for deep layer with 12 columns
-if (nrow(wss_data) > 0 || nrow(egom_data) > 0 || nrow(jb_data) > 0 || nrow(browns_data) > 0 || 
-    nrow(halifax_data) > 0 || nrow(georgesnec_data) > 0 || nrow(gmb150_data) > 0 || nrow(bof_data) > 0) {
-  
-  # Use the same legend data as shallow layer
-  legend_data <- NULL
-  if (nrow(wss_data) > 0) legend_data <- wss_data
-  else if (nrow(egom_data) > 0) legend_data <- egom_data
-  else if (nrow(jb_data) > 0) legend_data <- jb_data
-  else if (nrow(browns_data) > 0) legend_data <- browns_data
-  else if (nrow(halifax_data) > 0) legend_data <- halifax_data
-  else if (nrow(georgesnec_data) > 0) legend_data <- georgesnec_data
-  else if (nrow(gmb150_data) > 0) legend_data <- gmb150_data
-  else if (nrow(bof_data) > 0) legend_data <- bof_data
-  
-  legend_plot_deep <- ggplot(legend_data, aes(x = month, y = mean_cfin_below_80, color = factor(fYear))) +
-    geom_line(size = 0.8, alpha = 0.8) +
-    scale_color_viridis_d(name = "Year", option = "plasma") +
-    guides(color = guide_legend(ncol = 13)) +
-    theme_minimal() +
-    theme(legend.position = "top")
-  
-  shared_legend_deep <- get_legend(legend_plot_deep)
-  
-  # Combine plots with shared legend
-  deep_combined <- grid.arrange(
-    shared_legend_deep,
-    arrangeGrob(p1_deep, p2_deep, p3_deep, p4_deep,
-                p5_deep, p6_deep, p7_deep, p8_deep,
-                ncol = 4, nrow = 2),
-    heights = c(2, 10),
-    top = "Calanus finmarchicus Seasonal Biomass - Deep Layer (>80m) All CINAR Regions"
-  )
-} else {
-  deep_combined <- grid.arrange(
-    p1_deep, p2_deep, p3_deep, p4_deep,
-    p5_deep, p6_deep, p7_deep, p8_deep,
-    ncol = 4, nrow = 2,
-    top = "Calanus finmarchicus Seasonal Biomass - Deep Layer (>80m) All CINAR Regions"
-  )
-}
-
-# Save the combined plots
-output_dir <- file.path(work_dir, "figures")
-if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-ggsave(file.path(output_dir, "CINAR_all_regions_shallow.png"), shallow_combined, width = 20, height = 12, dpi = 300)
-ggsave(file.path(output_dir, "CINAR_all_regions_deep.png"), deep_combined, width = 20, height = 12, dpi = 300)
-
-cat("Plots saved to:", output_dir, "\n")
-
-# Print summary of data availability
-cat("\n=== Data Availability Summary ===\n")
-summary_table <- cinar_summary %>%
-  group_by(polygon) %>%
-  summarise(
-    region_name      = polygon_names[polygon[1]],
-    n_records        = n(),
-    years_span       = paste(min(fYear), "-", max(fYear)),
-    months_available = length(unique(month)),
-    .groups = 'drop'
-  )
+cat("\nCINAR visualization complete.\n")
+cat("  Overview figures:  plots/cinar_overview/CINAR_<key>_{shallow,deep,total}.png\n")
+cat("  Per-year figures:  plots/cinar_yearly/CINAR_<name>_<year>_{shallow,deep,total}.png\n")

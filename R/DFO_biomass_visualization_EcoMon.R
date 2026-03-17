@@ -1,106 +1,239 @@
 ## DFO_biomass_visualization_EcoMon.R
 ## Step 4b of the DFO Calanus biomass workflow.
-## Generates seasonal biomass time-series plots for two EcoMon strata of interest:
-##   ecomon_36 (Western Gulf of Maine) and ecomon_37 (Wilkinson Basin).
-## Produces a 4-panel figure: 2 strata × 2 depth layers (shallow and deep).
 ##
-## Input:  summaries/DFO_biomass_summary.csv  (EcoMon rows only)
-## Output: figures/Biomass_interannual_36_37.png
+## Two figure types per EcoMon stratum:
 ##
-## Plot design:
-##   x-axis  — month (Jan–Dec tick marks; data typically Apr–Sep)
-##   y-axis  — mean biomass (mg/m²) ± 1 SD across grid points in each stratum-month-year
-##   color   — year, viridis plasma scale; legend shows every 4th year + final year
+##   1. Overview — one PNG per stratum per depth layer (shallow, deep, total).
+##      All years overlaid, viridis plasma colour scale, ± 1 SD error bars.
+##      Output: plots/ecomon_overview/EcoMon_stratum_<id>_{shallow,deep,total}.png
 ##
-## Species plotted: Calanus finmarchicus (cfin) only.
-##   C. glacialis (cgla) and C. hyperboreus (chyp) columns exist in the summary
-##   but are not currently visualized here.
+##   2. Per-year climatology comparison — one PNG per stratum × year × depth.
+##      Four layers back-to-front:
+##        a) Light envelope: historical range (max mean + SD to min mean - SD)
+##        b) Darker envelope: climatological mean ± 1 SD across years
+##        c) Dashed line: climatological mean
+##        d) Bold line + error bars: focus year (± 1 SD across grid points)
+##      Bathymetry annotation (mean ± SD) in top-right corner.
+##      Output: plots/ecomon_yearly/EcoMon_<id>_<year>_{shallow,deep,total}.png
 ##
-## Note: This is a focused two-stratum figure. No script currently produces a
-##   comprehensive visualization covering all EcoMon strata in the summary.
+## Biomass values are converted from mg m⁻² to g m⁻² (÷ 1000) for display.
 ##
-## Required packages: dplyr, ggplot2, viridis, scales, gridExtra, grid
-## Open SPM_calanus_biomass.Rproj before sourcing so getwd() = repo root.
+## Input:  summaries/DFO_biomass_summary.csv (EcoMon rows)
+##
+## Required packages: dplyr, ggplot2, viridis, scales
 
 library(dplyr)
 library(ggplot2)
 library(viridis)
 library(scales)
-library(gridExtra)
-library(grid)
 
-# Repository root — set automatically from the current working directory.
-# Open the .Rproj file (or setwd() to the repo root) before sourcing.
 work_dir <- getwd()
 
-# Load combined summary and filter to EcoMon rows
+# ---------------------------------------------------------------------------
+# Load data and convert mg → g
+# ---------------------------------------------------------------------------
 all_summary    <- read.csv(file.path(work_dir, "summaries", "DFO_biomass_summary.csv"))
-ecomon_summary <- all_summary %>% filter(startsWith(polygon, "ecomon"))
+ecomon_summary <- all_summary %>%
+  filter(startsWith(polygon, "ecomon")) %>%
+  mutate(stratum_id = as.integer(sub("ecomon_", "", polygon)))
 
-# Filter to the two strata of interest
-wgom <- ecomon_summary %>% filter(polygon == "ecomon_36")
-wb   <- ecomon_summary %>% filter(polygon == "ecomon_37")
+# Convert all biomass mean/sd/min/max columns from mg to g
+biomass_cols <- grep("^(mean|sd|min|max)_(cfin|cgla|chyp)_", names(ecomon_summary), value = TRUE)
+ecomon_summary <- ecomon_summary %>%
+  mutate(across(all_of(biomass_cols), ~ .x / 1000))
 
-# Get every 4th year for legend breaks
-all_years <- sort(unique(ecomon_summary$fYear))
-legend_breaks <- unique(c(all_years[seq(1, length(all_years), by = 4)], max(all_years)))
+strata_ids <- sort(unique(ecomon_summary$stratum_id))
+cat(sprintf("EcoMon strata with data: %d (IDs: %s)\n",
+            length(strata_ids), paste(strata_ids, collapse = ", ")))
 
-# Common plot function
-make_plot <- function(df, y_col, se_col, title) {
+# Output directories
+overview_dir <- file.path(work_dir, "plots", "ecomon_overview")
+yearly_dir   <- file.path(work_dir, "plots", "ecomon_yearly")
+if (!dir.exists(overview_dir)) dir.create(overview_dir, recursive = TRUE)
+if (!dir.exists(yearly_dir))   dir.create(yearly_dir,   recursive = TRUE)
+
+# Common aesthetics
+month_labels <- c("J","F","M","A","M","J","J","A","S","O","N","D")
+all_years     <- sort(unique(ecomon_summary$fYear))
+legend_breaks <- unique(c(all_years[seq(1, length(all_years), by = 4)],
+                          max(all_years)))
+
+# Depth layer definitions
+depth_layers <- data.frame(
+  tag       = c("shallow",       "deep",              "total"),
+  mean_col  = c("mean_cfin_0_80","mean_cfin_below_80","mean_cfin_total"),
+  sd_col    = c("sd_cfin_0_80",  "sd_cfin_below_80",  "sd_cfin_total"),
+  label     = c("(0-80 m)",      "(>80 m)",           "(Total)"),
+  stringsAsFactors = FALSE
+)
+
+# ===========================================================================
+# Helper: overview plot (all years overlaid)
+# ===========================================================================
+make_overview <- function(df, y_col, sd_col, title) {
   ggplot(df, aes(x = month, y = .data[[y_col]], color = factor(fYear))) +
     geom_line(size = 0.8, alpha = 0.8) +
     geom_point(size = 1.5, alpha = 0.9) +
-    geom_errorbar(aes(ymin = .data[[y_col]] - .data[[se_col]],
-                      ymax = .data[[y_col]] + .data[[se_col]]),
+    geom_errorbar(aes(ymin = .data[[y_col]] - .data[[sd_col]],
+                      ymax = .data[[y_col]] + .data[[sd_col]]),
                   width = 0.2, alpha = 0.6) +
     scale_color_viridis_d(name = "Year", option = "plasma",
                           breaks = legend_breaks) +
-    scale_x_continuous(breaks = 1:12, labels = c("J","F","M","A","M","J","J","A","S","O","N","D")) +
+    scale_x_continuous(breaks = 1:12, labels = month_labels) +
     scale_y_continuous(labels = comma_format()) +
-    labs(title = title, x = "", y = "Biomass (mg/m²)") +
-    theme_minimal(base_size = 14) +
-    theme(legend.position = "none", plot.title = element_text(size = 14))
+    guides(color = guide_legend(ncol = min(length(unique(df$fYear)), 13))) +
+    labs(title = title, x = NULL, y = expression("Biomass (g m"^-2*")")) +
+    theme_minimal(base_size = 13) +
+    theme(legend.position = "bottom")
 }
 
-# 4 plots
-p_wss_shallow <- make_plot(wgom, "mean_cfin_0_80", "sd_cfin_0_80", "Stratum 36 (0-80m)")
-p_wb_shallow  <- make_plot(wb, "mean_cfin_0_80", "sd_cfin_0_80", "Stratum 37 (0-80m)")
-p_wss_deep    <- make_plot(wgom, "mean_cfin_below_80", "sd_cfin_below_80", "Stratum 36 (>80m)")
-p_wb_deep     <- make_plot(wb, "mean_cfin_below_80", "sd_cfin_below_80", "Stratum 37 (>80m)")
+# ===========================================================================
+# Helper: per-year climatology comparison plot
+# ===========================================================================
+make_year_plot <- function(strat_data, focus_year, y_col, sd_col,
+                           depth_label, display_name, bathy_text,
+                           n_text) {
 
-# Shared legend showing every 4th year
-get_legend <- function(myggplot) {
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  tmp$grobs[[leg]]
+  # Climatology: mean and SD of the yearly spatial-means, by month
+  clim <- strat_data %>%
+    group_by(month) %>%
+    summarise(clim_mean = mean(.data[[y_col]], na.rm = TRUE),
+              clim_sd   = sd(.data[[y_col]],   na.rm = TRUE),
+              .groups = "drop") %>%
+    mutate(clim_sd = ifelse(is.na(clim_sd), 0, clim_sd))
+
+  # Historical range: max/min year means ± their spatial SDs
+  hist_range <- strat_data %>%
+    group_by(month) %>%
+    summarise(
+      max_mean = max(.data[[y_col]], na.rm = TRUE),
+      max_sd   = .data[[sd_col]][which.max(.data[[y_col]])],
+      min_mean = min(.data[[y_col]], na.rm = TRUE),
+      min_sd   = .data[[sd_col]][which.min(.data[[y_col]])],
+      .groups = "drop"
+    ) %>%
+    mutate(
+      hist_ymax = max_mean + max_sd,
+      hist_ymin = min_mean - min_sd
+    )
+
+  yr_data <- strat_data %>% filter(fYear == focus_year)
+
+  p <- ggplot() +
+    # Layer 0 (furthest back): historical range envelope
+    geom_ribbon(data = hist_range,
+                aes(x = month, ymin = hist_ymin, ymax = hist_ymax),
+                fill = "grey80", alpha = 0.5) +
+    # Layer 1: climatological mean ± SD envelope
+    geom_ribbon(data = clim,
+                aes(x = month,
+                    ymin = clim_mean - clim_sd,
+                    ymax = clim_mean + clim_sd),
+                fill = "grey50", alpha = 0.5) +
+    # Layer 2: climatological mean
+    geom_line(data = clim,
+              aes(x = month, y = clim_mean),
+              linetype = "dashed", color = "grey30", size = 0.7) +
+    # Layer 3: focus year with error bars
+    geom_errorbar(data = yr_data,
+                  aes(x = month,
+                      ymin = .data[[y_col]] - .data[[sd_col]],
+                      ymax = .data[[y_col]] + .data[[sd_col]]),
+                  width = 0.25, color = "#D55E00", alpha = 0.7) +
+    geom_line(data = yr_data,
+              aes(x = month, y = .data[[y_col]]),
+              color = "#D55E00", size = 1.2) +
+    geom_point(data = yr_data,
+               aes(x = month, y = .data[[y_col]]),
+               color = "#D55E00", size = 2.5) +
+    # Scales
+    scale_x_continuous(breaks = 1:12, labels = month_labels) +
+    scale_y_continuous(labels = comma_format()) +
+    labs(title = paste0(display_name, " ", depth_label, " \u2014 ", focus_year),
+         x = NULL,
+         y = expression("Biomass (g m"^-2*")")) +
+    # Bathymetry and sample size annotations
+    annotate("text", x = 11, y = Inf, label = bathy_text,
+             hjust = 1, vjust = 5.5, size = 5, color = "grey20") +
+    annotate("text", x = 11, y = Inf, label = n_text,
+             hjust = 1, vjust = 7.5, size = 5, color = "grey20") +
+    theme_minimal(base_size = 13) +
+    theme(
+      legend.position = "none"
+    )
+
+  p
 }
 
-legend_plot <- ggplot(wgom, aes(x = month, y = mean_cfin_0_80, color = factor(fYear))) +
-  geom_line() +
-  scale_color_viridis_d(name = NULL, option = "plasma", breaks = legend_breaks) +
-  guides(color = guide_legend(ncol = length(legend_breaks))) +
-  theme_minimal(base_size = 18) +
-  theme(legend.position = "bottom",
-        legend.margin = margin(t = -10, b = 0))
+# ===========================================================================
+# Main loop over strata
+# ===========================================================================
+for (sid in strata_ids) {
+  strat_data <- ecomon_summary %>% filter(stratum_id == sid)
+  display_name <- paste("EcoMon Stratum", sid)
 
-shared_legend <- get_legend(legend_plot)
+  if (nrow(strat_data) == 0) {
+    cat(sprintf("  Stratum %d: no data, skipping\n", sid))
+    next
+  }
 
-combined_plot <- grid.arrange(
-  arrangeGrob(p_wss_shallow, p_wb_shallow,
-              p_wss_deep, p_wb_deep,
-              ncol = 2, nrow = 2),
-  shared_legend,
-  heights = c(10, 1)
-)
-figures_dir <- file.path(work_dir, "figures")
-if (!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+  cat(sprintf("  Stratum %d: %d rows, years %d-%d\n", sid, nrow(strat_data),
+              min(strat_data$fYear), max(strat_data$fYear)))
 
-ggsave(
-  filename = file.path(figures_dir, "Biomass_interannual_36_37.png"),
-  plot = combined_plot,
-  width = 10,
-  height = 8,
-  units = "in",
-  dpi = 600,
-  bg = "white"
-)
+  # Bathymetry annotation
+  bathy_row <- strat_data %>% filter(!is.na(mean_bathy)) %>% slice(1)
+  if (nrow(bathy_row) > 0) {
+    bathy_text <- sprintf("Depth: %.0f \u00B1 %.0f m",
+                          bathy_row$mean_bathy, bathy_row$sd_bathy)
+  } else {
+    bathy_text <- ""
+  }
+
+  years <- sort(unique(strat_data$fYear))
+
+  # n_col mapping: depth tag → sample-size column in summary
+  n_col_map <- c(shallow = "n_0_80", deep = "n_below_80", total = "n_0_80")
+
+  for (dl in seq_len(nrow(depth_layers))) {
+    tag      <- depth_layers$tag[dl]
+    mean_col <- depth_layers$mean_col[dl]
+    sd_col   <- depth_layers$sd_col[dl]
+    d_label  <- depth_layers$label[dl]
+    n_col    <- n_col_map[tag]
+
+    # --- Overview figure ---
+    p_over <- make_overview(strat_data, mean_col, sd_col,
+                            paste0(display_name, " \u2014 ", d_label))
+    ggsave(file.path(overview_dir, sprintf("EcoMon_stratum_%d_%s.png", sid, tag)),
+           p_over, width = 8, height = 6, dpi = 300, bg = "white")
+
+    # --- Per-year climatology figures ---
+    for (yr in years) {
+      yr_rows <- strat_data %>% filter(fYear == yr)
+      n_val   <- max(yr_rows[[n_col]], na.rm = TRUE)
+      out_path <- file.path(yearly_dir,
+                            sprintf("EcoMon_%d_%d_%s.png", sid, yr, tag))
+
+      if (is.na(n_val) || n_val < 22) {
+        cat(sprintf("    Low n for stratum %d %d %s (n = %s) — placeholder\n", sid, yr, tag,
+                    ifelse(is.na(n_val), "NA", n_val)))
+        p_na <- ggplot() +
+          annotate("text", x = 0.5, y = 0.5,
+                   label = "Plot Not Available\nDue to Insufficient Datapoints",
+                   size = 10, fontface = "bold", hjust = 0.5, vjust = 0.5) +
+          theme_void()
+        ggsave(out_path, p_na, width = 8, height = 6, dpi = 300, bg = "white")
+        next
+      }
+      n_text <- sprintf("Data Points per Month = %d", n_val)
+
+      p_yr <- make_year_plot(strat_data, yr, mean_col, sd_col,
+                             d_label, display_name, bathy_text, n_text)
+      ggsave(out_path, p_yr, width = 8, height = 6, dpi = 300, bg = "white")
+    }
+  }
+}
+
+cat("\nEcoMon visualization complete.\n")
+cat("  Overview figures:  plots/ecomon_overview/EcoMon_stratum_<id>_{shallow,deep,total}.png\n")
+cat("  Per-year figures:  plots/ecomon_yearly/EcoMon_<id>_<year>_{shallow,deep,total}.png\n")
