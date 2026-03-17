@@ -1,0 +1,296 @@
+[
+  {
+    "id": "CINAR_WesternScotianShelf",
+    "label": "Western Scotian Shelf",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_EasternGOM",
+    "label": "Eastern Gulf of Maine",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_JordanBasin",
+    "label": "Jordan Basin",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_BrownsBank",
+    "label": "Browns Bank",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_EasternScotianShelf",
+    "label": "Eastern Scotian Shelf",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_GeorgesNEC",
+    "label": "Georges Basin and NE Channel",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_GrandManan",
+    "label": "Grand Manan Basin",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_BayOfFundy",
+    "label": "Bay of Fundy",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "CINAR_SBNMS",
+    "label": "Stellwagen Bank NMS",
+    "type": "CINAR",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_14",
+    "label": "EcoMon Stratum 14",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_15",
+    "label": "EcoMon Stratum 15",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_16",
+    "label": "EcoMon Stratum 16",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_17",
+    "label": "EcoMon Stratum 17",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_18",
+    "label": "EcoMon Stratum 18",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_19",
+    "label": "EcoMon Stratum 19",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_20",
+    "label": "EcoMon Stratum 20",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_21",
+    "label": "EcoMon Stratum 21",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_22",
+    "label": "EcoMon Stratum 22",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_23",
+    "label": "EcoMon Stratum 23",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_24",
+    "label": "EcoMon Stratum 24",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_25",
+    "label": "EcoMon Stratum 25",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_26",
+    "label": "EcoMon Stratum 26",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_27",
+    "label": "EcoMon Stratum 27",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_28",
+    "label": "EcoMon Stratum 28",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_29",
+    "label": "EcoMon Stratum 29",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_30",
+    "label": "EcoMon Stratum 30",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_31",
+    "label": "EcoMon Stratum 31",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_32",
+    "label": "EcoMon Stratum 32",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_33",
+    "label": "EcoMon Stratum 33",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_34",
+    "label": "EcoMon Stratum 34",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_35",
+    "label": "EcoMon Stratum 35",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_36",
+    "label": "EcoMon Stratum 36",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_37",
+    "label": "EcoMon Stratum 37",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_38",
+    "label": "EcoMon Stratum 38",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_40",
+    "label": "EcoMon Stratum 40",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_41",
+    "label": "EcoMon Stratum 41",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_42",
+    "label": "EcoMon Stratum 42",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_43",
+    "label": "EcoMon Stratum 43",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_44",
+    "label": "EcoMon Stratum 44",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_45",
+    "label": "EcoMon Stratum 45",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_46",
+    "label": "EcoMon Stratum 46",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  },
+  {
+    "id": "EcoMon_47",
+    "label": "EcoMon Stratum 47",
+    "type": "EcoMon",
+    "min_year": 1999,
+    "max_year": 2024
+  }
+]
