@@ -13,10 +13,8 @@
 ##
 ## Map domain: -72 to -60°W, 41 to 46°N.
 ##   NOTE: This domain clips WSS, Halifax, and Browns Bank, which extend east of -60°W
-##   (Halifax reaches ~-57°W). The map is adequate for QC but not a full-coverage figure.
+##   (Halifax reaches ~-57°W). 
 ##
-## TODO: Add bathymetry caching (like DFO_EcoMon_strata_map.R uses gom_bathy_ecomon.rda)
-##   to avoid re-downloading ETOPO on every run.
 ##
 ## Required packages: marmap, dplyr, RColorBrewer; internet access required
 ## Open SPM_calanus_biomass.Rproj before sourcing so getwd() = repo root.
