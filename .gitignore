@@ -26,8 +26,14 @@ polygons/
 *.mat
 
 # -------------------------------------------------------
-# Keep these cache files (small, save re-download time):
-#   cache/gom_bathy.rda
-#   cache/gom_bathy_ecomon.rda
-#   cache/ne_strata_cache.rds
+# Cache files — regenerated on first pipeline run
 # -------------------------------------------------------
+cache/
+
+# -------------------------------------------------------
+# Internal working documents
+# -------------------------------------------------------
+Context/
+HANDOFF.md
+work_packages.md
+workflow_audit.md
