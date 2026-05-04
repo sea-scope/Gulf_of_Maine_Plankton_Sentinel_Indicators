@@ -1,57 +1,69 @@
 # Gulf of Maine Plankton Sentinel Indicators
 
-Interactive visualization of *Calanus finmarchicus* biomass across the Northwest Atlantic shelf, derived from the DFO Species Distribution Model (SDM) data product (Plourde et al. 2024).
+Interactive visualization of Gulf of Maine plankton data products, including modeled *Calanus finmarchicus* biomass and sentinel station indicators.
 
 **Live site:** [sea-scope.github.io/Gulf_of_Maine_Plankton_Sentinel_Indicators](https://sea-scope.github.io/Gulf_of_Maine_Plankton_Sentinel_Indicators/)
 
-## Overview
+## Data Products
 
-This repository provides an R data pipeline and static web viewer for exploring modeled *C. finmarchicus* biomass (CIV–CVI stages) at regional spatial scales. Biomass fields from the DFO GLORYS12v1-based SDM (~9 km resolution) are aggregated into CINAR polygons and NOAA EcoMon survey strata, summarized by depth layer (0–80 m, >80 m, total), and visualized as seasonal climatologies with interannual context.
+| Product | Description | Status |
+|---------|-------------|--------|
+| **SPM Biomass** | Modeled *C. finmarchicus* biomass (CIV-CVI) from DFO GLORYS12v1-based SDM, aggregated into CINAR polygons and EcoMon strata | Complete |
+| **Sentinel Indicators** | WBTS/CMTS station time series: Calanus abundance, stage index, mesozooplankton biomass | In development |
+| **Environmental Time Series** | Placeholder | Future |
+| **Satellite SST/Chl** | Placeholder | Future |
 
-The web viewer presents three perspectives:
+## Repository Structure
 
-| Page | Scope |
-|------|-------|
-| **CINAR** | 8 CINAR regional polygons (Bay of Fundy, WSS, Halifax, Browns, Georges/NEC, EGOM, GMB150, Jordans Basin) |
-| **EcoMon** | All 33 EcoMon survey strata in the study domain |
-| **CPO** | Stellwagen Bank NMS + EcoMon strata 35, 36, 37, 40 |
+```
+GoM_Plankton_Sentinel_Indicators/
+  GoM_Plankton_Sentinel_Indicators.Rproj  -- R project file (open first)
+  run_pipeline.R              -- Master orchestrator (all products)
+  run_spm_biomass.R           -- SPM biomass pipeline (Steps 1-4g)
+  run_sentinel.R              -- Sentinel indicators pipeline (stub)
+  R/
+    01_spm_biomass/           -- SPM biomass processing and visualization
+    02_sentinel_indicators/   -- Sentinel indicator pipeline (WP4a-c)
+    03_environmental_timeseries/  -- Future
+    04_satellite_products/    -- Future
+    shared/                   -- Shared utilities (populated when needed)
+  data/
+    spm_biomass/              -- Polygon boundaries, strata coordinates
+    sentinel/
+      raw/                    -- Raw station Excel files (gitignored)
+      prepared/               -- Cleaned station CSVs (committed)
+  summaries/
+    spm_biomass/              -- DFO_biomass_summary.csv
+    sentinel/                 -- Sentinel summary outputs
+  plots/
+    spm_biomass/              -- SPM biomass viewer plots + metadata JSON
+    sentinel/                 -- Sentinel indicator plots
+  figures/                    -- Publication maps (shared across products)
+  index.html                  -- Landing page
+  cinar.html                  -- CINAR viewer
+  ecomon.html                 -- EcoMon viewer
+  cpo.html                    -- CPO viewer
+```
 
-## Data Pipeline
+## SPM Biomass Pipeline
 
-The pipeline is orchestrated by `run_pipeline.R`. Open `SPM_calanus_biomass.Rproj` before running.
+The SPM biomass pipeline is orchestrated by `run_spm_biomass.R`.
 
 | Step | Script | Description |
 |------|--------|-------------|
-| 1 | `R/DFO_data_process.R` | Read raw 3D biomass RDS files, integrate over depth layers, write CSVs |
-| 2 | `R/Data_layer_Polygons.R` | Assign grid points to CINAR polygons and EcoMon strata (point-in-polygon) |
-| 3 | `R/DFO_data_polygon_summary.R` | Aggregate to polygon-level means, SDs, ranges, bathymetry stats, sample sizes |
-| 4a | `R/DFO_biomass_visualization_CINAR.R` | Generate CINAR biomass plots (overview + per-year climatology) |
-| 4b | `R/DFO_biomass_visualization_EcoMon.R` | Generate EcoMon biomass plots (overview + per-year climatology) |
-| 4c | `R/export_viewer_metadata.R` | Export viewer metadata JSON |
-| 4e | `R/DFO_CINAR_polygon_map.R` | CINAR polygon QC map |
-| 4f | `R/DFO_EcoMon_strata_map.R` | EcoMon strata map |
-| 4g | `R/DFO_region_map.R` | Publication-quality region maps |
+| 1 | `R/01_spm_biomass/DFO_data_process.R` | Read raw 3D biomass RDS files, integrate over depth layers |
+| 2 | `R/01_spm_biomass/Data_layer_Polygons.R` | Assign grid points to CINAR polygons and EcoMon strata |
+| 3 | `R/01_spm_biomass/DFO_data_polygon_summary.R` | Aggregate to polygon-level statistics |
+| 4a | `R/01_spm_biomass/DFO_biomass_visualization_CINAR.R` | CINAR biomass plots |
+| 4b | `R/01_spm_biomass/DFO_biomass_visualization_EcoMon.R` | EcoMon biomass plots |
+| 4c | `R/01_spm_biomass/export_viewer_metadata.R` | Viewer metadata JSON |
+| 4e | `R/01_spm_biomass/DFO_CINAR_polygon_map.R` | CINAR polygon QC map |
+| 4f | `R/01_spm_biomass/DFO_EcoMon_strata_map.R` | EcoMon strata map |
+| 4g | `R/01_spm_biomass/DFO_region_map.R` | Publication-quality region maps |
 
 ### Input data
 
-Raw SDM output files (`Bioenergy_3D/*.rds`) are not included in this repository (~8.8 GB). Contact DFO (Caroline Lehoux, Eve Rioux) for access to the *C. finmarchicus* biomass data product, or see Plourde et al. (2024) for details.
-
-### Output structure
-
-```
-plots/
-  stations_metadata.json        -- viewer metadata
-  cinar_overview/               -- CINAR all-years-overlaid PNGs
-  cinar_yearly/                 -- CINAR per-year climatology PNGs
-  ecomon_overview/              -- EcoMon all-years-overlaid PNGs
-  ecomon_yearly/                -- EcoMon per-year climatology PNGs
-figures/
-  DFO_region_map_CINAR.png     -- CINAR publication map
-  DFO_region_map_SBNMS.png     -- SBNMS/GoM region map
-  EcoMon_strata_map.png        -- EcoMon strata map
-summaries/
-  DFO_biomass_summary.csv      -- polygon-level summary statistics
-```
+Raw SDM output files (`Bioenergy_3D/*.rds`) are not included (~8.8 GB). Contact DFO (Caroline Lehoux, Eve Rioux) for access.
 
 ## How to Read the Plots
 
@@ -59,27 +71,19 @@ Each per-year figure has four layers:
 
 | Layer | Description |
 |-------|-------------|
-| Light grey ribbon | Historical range (min–max across all years) |
-| Dark grey ribbon | Climatological mean ± 1 SD |
+| Light grey ribbon | Historical range (min-max across all years) |
+| Dark grey ribbon | Climatological mean +/- 1 SD |
 | Dashed grey line | Climatological mean |
-| Orange line + error bars | Selected year mean ± 1 SD |
+| Orange line + error bars | Selected year mean +/- 1 SD |
 
-Months with fewer than 22 data points display a "limited data" placeholder instead of the plot.
-
-## Key Parameters
-
-- **Biomass units:** g m⁻²
-- **SDM resolution:** GLORYS12v1, ~9 km (0.083° x 0.083°)
-- **Depth layers:** 0–80 m (shallow), >80 m (deep), total water column
-- **Species/stages:** *Calanus finmarchicus* CIV–CVI
-- **Years:** 1999–2024
+Months with fewer than 22 data points display a "limited data" placeholder.
 
 ## References
 
-Plourde, S., Lehoux, C., Rioux, E., and Galbraith, P.S. (2024). Describing the seasonal and spatial distribution of four key copepod species of the Northwest Atlantic using a species distribution model. DFO Canadian Science Advisory Secretariat Research Document 2024/039.
+Plourde, S., et al. (2024). Calanus species distribution models and NARW foraging habitat in Canadian waters. DFO CSAS Research Document 2024/039.
 
 ## Development
 
-This repository and web viewer were developed using Visual Studio Code with Claude Code (Anthropic). Pipeline scripts are written in R using `sf`, `ggplot2`, `marmap`, and `dplyr`.
+Developed using Visual Studio Code with Claude Code (Anthropic). Pipeline scripts are written in R using `sf`, `ggplot2`, `marmap`, and `dplyr`.
 
 **Author:** Cameron Thompson, NERACOOS

@@ -27,7 +27,7 @@ if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 # HELPER: load a poly_*.csv (no header; NaN rows separate sub-polygons)
 # ============================================================
 load_poly <- function(name) {
-  f <- file.path(work_dir, "data", paste0("poly_", name, ".csv"))
+  f <- file.path(work_dir, "data", "spm_biomass", paste0("poly_", name, ".csv"))
   if (!file.exists(f)) { warning(paste("poly CSV not found:", f)); return(NULL) }
   df <- read.csv(f, header = FALSE, col.names = c("lon", "lat"))
   nan_rows <- which(is.nan(df$lon) | is.nan(df$lat))
@@ -59,9 +59,9 @@ poly_GMB150  <- load_poly("GMB_150")
 poly_BOF     <- load_poly("BOF_latlon")
 
 # SBNMS boundaries (no header: lon, lat)
-sbnms_bnd  <- read.csv(file.path(work_dir, "data", "SBNMS.csv"),
+sbnms_bnd  <- read.csv(file.path(work_dir, "data", "spm_biomass", "SBNMS.csv"),
                         header = FALSE, col.names = c("lon", "lat"))
-sbnms_40m  <- read.csv(file.path(work_dir, "data", "SBNMS_40m_latlon.csv"),
+sbnms_40m  <- read.csv(file.path(work_dir, "data", "spm_biomass", "SBNMS_40m_latlon.csv"),
                         header = FALSE, col.names = c("lon", "lat"))
 
 # ============================================================
@@ -98,7 +98,7 @@ bbl <- data.frame(
 # ============================================================
 # ECOMON STRATA — loaded for SBNMS map (strata 35, 36, 37, 40)
 # ============================================================
-strata_coords    <- read.csv(file.path(work_dir, "data", "EMstrata_v4_coords.csv"))
+strata_coords    <- read.csv(file.path(work_dir, "data", "spm_biomass", "EMstrata_v4_coords.csv"))
 sbnms_strata_ids <- c(35L, 36L, 37L, 40L)
 sbnms_strata     <- strata_coords[strata_coords$stratum_id %in% sbnms_strata_ids, ]
 sbnms_strata$label <- paste("Stratum", sbnms_strata$stratum_id)

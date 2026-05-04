@@ -281,7 +281,7 @@
   function updateImage() {
     var s = stationMap[elStation.value];
     if (!s) return;
-    var subdir = s.type === "CINAR" ? "plots/cinar_yearly" : "plots/ecomon_yearly";
+    var subdir = s.type === "CINAR" ? "plots/spm_biomass/cinar_yearly" : "plots/spm_biomass/ecomon_yearly";
     var filename = s.id + "_" + elYear.value + "_" + elDepth.value + ".png";
     elImg.style.display = "";
     elNoData.style.display = "none";
@@ -304,7 +304,7 @@
     updateImage();
   }
 
-  fetch("plots/stations_metadata.json")
+  fetch("plots/spm_biomass/stations_metadata.json")
     .then(function (r) { return r.json(); })
     .then(init)
     .catch(function () {

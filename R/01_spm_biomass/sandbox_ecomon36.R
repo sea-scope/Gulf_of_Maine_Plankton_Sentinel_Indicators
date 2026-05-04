@@ -19,7 +19,7 @@ work_dir <- getwd()
 # ---------------------------------------------------------------------------
 # Load stratum 36 data
 # ---------------------------------------------------------------------------
-all_summary <- read.csv(file.path(work_dir, "summaries", "DFO_biomass_summary.csv"))
+all_summary <- read.csv(file.path(work_dir, "summaries", "spm_biomass", "DFO_biomass_summary.csv"))
 
 # Convert mg → g for all biomass columns
 biomass_cols <- grep("^(mean|sd|min|max)_(cfin|cgla|chyp)_", names(all_summary), value = TRUE)

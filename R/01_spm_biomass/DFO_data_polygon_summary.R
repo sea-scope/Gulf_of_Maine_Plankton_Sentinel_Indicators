@@ -33,7 +33,7 @@ rm(list = ls())
 # Repository root — open the .Rproj file before sourcing.
 work_dir   <- getwd()
 input_dir  <- file.path(work_dir, "polygons")
-output_dir <- file.path(work_dir, "summaries")
+output_dir <- file.path(work_dir, "summaries", "spm_biomass")
 if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
 # CINAR polygon ID → name lookup

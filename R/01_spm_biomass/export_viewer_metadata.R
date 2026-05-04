@@ -14,7 +14,7 @@ library(jsonlite)
 work_dir <- getwd()
 
 # ── Read summary ──────────────────────────────────────────────────────────
-summary_file <- file.path(work_dir, "summaries", "DFO_biomass_summary.csv")
+summary_file <- file.path(work_dir, "summaries", "spm_biomass", "DFO_biomass_summary.csv")
 df <- read.csv(summary_file, stringsAsFactors = FALSE)
 
 # ── CINAR mapping (must match DFO_biomass_visualization_CINAR.R) ──────────
@@ -67,7 +67,7 @@ ecomon_entries <- lapply(strata_ids, function(sid) {
 # ── Combine and write JSON ────────────────────────────────────────────────
 all_entries <- c(cinar_entries, ecomon_entries)
 
-output_dir <- file.path(work_dir, "plots")
+output_dir <- file.path(work_dir, "plots", "spm_biomass")
 if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
 output_file <- file.path(output_dir, "stations_metadata.json")

@@ -58,7 +58,7 @@ pal <- pal_colors
 names(pal) <- as.character(strata_ids)
 
 # Load EcoMon stratum boundary coordinates
-strata_coords <- read.csv(file.path(work_dir, "data", "EMstrata_v4_coords.csv"))
+strata_coords <- read.csv(file.path(work_dir, "data", "spm_biomass", "EMstrata_v4_coords.csv"))
 
 # Get bathymetric data — cache as gom_bathy_ecomon.rda after first download
 bathy_cache <- file.path(work_dir, "cache", "gom_bathy_ecomon.rda")

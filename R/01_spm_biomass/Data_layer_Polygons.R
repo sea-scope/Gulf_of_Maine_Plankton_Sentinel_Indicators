@@ -83,15 +83,15 @@ cinar_polygons <- st_sf(
   CINAR_poly = c(7L, 3L, 6L, 8L, 1L, 2L, 4L, 5L, 9L),
   cinar_name = c("GMB150", "JB", "GeorgesNEC", "BOF", "WSS", "EGOM", "Browns", "Halifax", "SBNMS"),
   geometry   = st_sfc(
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_GMB_150.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_JB_deep.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_GeorgesNEC.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_BOF_latlon.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_WSS_broad.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_EGOM_broad.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_Browns_line.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "poly_Halifax_line.csv")))[[1]],
-    make_sfc(read_poly(file.path(work_dir, "data", "SBNMS.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_GMB_150.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_JB_deep.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_GeorgesNEC.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_BOF_latlon.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_WSS_broad.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_EGOM_broad.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_Browns_line.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "poly_Halifax_line.csv")))[[1]],
+    make_sfc(read_poly(file.path(work_dir, "data", "spm_biomass", "SBNMS.csv")))[[1]],
     crs = 4326
   )
 )
@@ -114,7 +114,7 @@ cat("Loading EcoMon strata from EMstrata_v4_coords.csv...\n")
 strata_cache <- file.path(work_dir, "cache", "ne_strata_cache.rds")
 
 if (!file.exists(strata_cache)) {
-  coords_file <- file.path(work_dir, "data", "EMstrata_v4_coords.csv")
+  coords_file <- file.path(work_dir, "data", "spm_biomass", "EMstrata_v4_coords.csv")
   if (!file.exists(coords_file)) {
     stop(
       "EMstrata_v4_coords.csv not found.\n",

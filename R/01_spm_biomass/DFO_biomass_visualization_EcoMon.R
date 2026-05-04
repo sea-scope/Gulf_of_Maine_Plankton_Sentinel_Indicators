@@ -1,24 +1,24 @@
-## DFO_biomass_visualization_CINAR.R
-## Step 4a of the DFO Calanus biomass workflow.
+## DFO_biomass_visualization_EcoMon.R
+## Step 4b of the DFO Calanus biomass workflow.
 ##
-## Two figure types per CINAR polygon:
+## Two figure types per EcoMon stratum:
 ##
-##   1. Overview — one PNG per polygon per depth layer (shallow, deep, total).
+##   1. Overview — one PNG per stratum per depth layer (shallow, deep, total).
 ##      All years overlaid, viridis plasma colour scale, ± 1 SD error bars.
-##      Output: plots/cinar_overview/CINAR_<key>_{shallow,deep,total}.png
+##      Output: plots/ecomon_overview/EcoMon_stratum_<id>_{shallow,deep,total}.png
 ##
-##   2. Per-year climatology comparison — one PNG per polygon × year × depth.
+##   2. Per-year climatology comparison — one PNG per stratum × year × depth.
 ##      Four layers back-to-front:
 ##        a) Light envelope: historical range (max mean + SD to min mean - SD)
 ##        b) Darker envelope: climatological mean ± 1 SD across years
 ##        c) Dashed line: climatological mean
 ##        d) Bold line + error bars: focus year (± 1 SD across grid points)
 ##      Bathymetry annotation (mean ± SD) in top-right corner.
-##      Output: plots/cinar_yearly/CINAR_<display_name>_<year>_{shallow,deep,total}.png
+##      Output: plots/ecomon_yearly/EcoMon_<id>_<year>_{shallow,deep,total}.png
 ##
 ## Biomass values are converted from mg m⁻² to g m⁻² (÷ 1000) for display.
 ##
-## Input:  summaries/DFO_biomass_summary.csv (CINAR rows)
+## Input:  summaries/DFO_biomass_summary.csv (EcoMon rows)
 ##
 ## Required packages: dplyr, ggplot2, viridis, scales
 
@@ -32,44 +32,33 @@ work_dir <- getwd()
 # ---------------------------------------------------------------------------
 # Load data and convert mg → g
 # ---------------------------------------------------------------------------
-all_summary   <- read.csv(file.path(work_dir, "summaries", "DFO_biomass_summary.csv"))
-cinar_summary <- all_summary %>% filter(!startsWith(polygon, "ecomon"))
+all_summary    <- read.csv(file.path(work_dir, "summaries", "spm_biomass", "DFO_biomass_summary.csv"))
+ecomon_summary <- all_summary %>%
+  filter(startsWith(polygon, "ecomon")) %>%
+  mutate(stratum_id = as.integer(sub("ecomon_", "", polygon)))
 
 # Convert all biomass mean/sd/min/max columns from mg to g
-biomass_cols <- grep("^(mean|sd|min|max)_(cfin|cgla|chyp)_", names(cinar_summary), value = TRUE)
-cinar_summary <- cinar_summary %>%
+biomass_cols <- grep("^(mean|sd|min|max)_(cfin|cgla|chyp)_", names(ecomon_summary), value = TRUE)
+ecomon_summary <- ecomon_summary %>%
   mutate(across(all_of(biomass_cols), ~ .x / 1000))
 
-# Polygon display names (for titles) and file-safe names (for filenames)
-polygon_info <- data.frame(
-  key          = c("WSS", "EGOM", "JB", "Browns", "Halifax",
-                   "GeorgesNEC", "GMB150", "BOF", "SBNMS"),
-  display_name = c("Western Scotian Shelf", "Eastern Gulf of Maine",
-                   "Jordan Basin", "Browns Bank", "Eastern Scotian Shelf",
-                   "Georges Basin and NE Channel", "Grand Manan Basin",
-                   "Bay of Fundy", "Stellwagen Bank NMS"),
-  file_name    = c("WesternScotianShelf", "EasternGOM",
-                   "JordanBasin", "BrownsBank", "EasternScotianShelf",
-                   "GeorgesNEC", "GrandManan", "BayOfFundy", "SBNMS"),
-  stringsAsFactors = FALSE
-)
-
-cat("Available CINAR polygons:",
-    paste(sort(unique(cinar_summary$polygon)), collapse = ", "), "\n")
+strata_ids <- sort(unique(ecomon_summary$stratum_id))
+cat(sprintf("EcoMon strata with data: %d (IDs: %s)\n",
+            length(strata_ids), paste(strata_ids, collapse = ", ")))
 
 # Output directories
-overview_dir <- file.path(work_dir, "plots", "cinar_overview")
-yearly_dir   <- file.path(work_dir, "plots", "cinar_yearly")
+overview_dir <- file.path(work_dir, "plots", "spm_biomass", "ecomon_overview")
+yearly_dir   <- file.path(work_dir, "plots", "spm_biomass", "ecomon_yearly")
 if (!dir.exists(overview_dir)) dir.create(overview_dir, recursive = TRUE)
 if (!dir.exists(yearly_dir))   dir.create(yearly_dir,   recursive = TRUE)
 
 # Common aesthetics
 month_labels <- c("J","F","M","A","M","J","J","A","S","O","N","D")
-all_years     <- sort(unique(cinar_summary$fYear))
+all_years     <- sort(unique(ecomon_summary$fYear))
 legend_breaks <- unique(c(all_years[seq(1, length(all_years), by = 4)],
                           max(all_years)))
 
-# Depth layer definitions: column stems and labels
+# Depth layer definitions
 depth_layers <- data.frame(
   tag       = c("shallow",       "deep",              "total"),
   mean_col  = c("mean_cfin_0_80","mean_cfin_below_80","mean_cfin_total"),
@@ -101,12 +90,12 @@ make_overview <- function(df, y_col, sd_col, title) {
 # ===========================================================================
 # Helper: per-year climatology comparison plot
 # ===========================================================================
-make_year_plot <- function(poly_data, focus_year, y_col, sd_col,
+make_year_plot <- function(strat_data, focus_year, y_col, sd_col,
                            depth_label, display_name, bathy_text,
                            n_text) {
 
   # Climatology: mean and SD of the yearly spatial-means, by month
-  clim <- poly_data %>%
+  clim <- strat_data %>%
     group_by(month) %>%
     summarise(clim_mean = mean(.data[[y_col]], na.rm = TRUE),
               clim_sd   = sd(.data[[y_col]],   na.rm = TRUE),
@@ -114,7 +103,7 @@ make_year_plot <- function(poly_data, focus_year, y_col, sd_col,
     mutate(clim_sd = ifelse(is.na(clim_sd), 0, clim_sd))
 
   # Historical range: max/min year means ± their spatial SDs
-  hist_range <- poly_data %>%
+  hist_range <- strat_data %>%
     group_by(month) %>%
     summarise(
       max_mean = max(.data[[y_col]], na.rm = TRUE),
@@ -128,8 +117,7 @@ make_year_plot <- function(poly_data, focus_year, y_col, sd_col,
       hist_ymin = min_mean - min_sd
     )
 
-  # Focus year
-  yr_data <- poly_data %>% filter(fYear == focus_year)
+  yr_data <- strat_data %>% filter(fYear == focus_year)
 
   p <- ggplot() +
     # Layer 0 (furthest back): historical range envelope
@@ -178,24 +166,22 @@ make_year_plot <- function(poly_data, focus_year, y_col, sd_col,
 }
 
 # ===========================================================================
-# Main loop over polygons
+# Main loop over strata
 # ===========================================================================
-for (i in seq_len(nrow(polygon_info))) {
-  pkey  <- polygon_info$key[i]
-  dname <- polygon_info$display_name[i]
-  fname <- polygon_info$file_name[i]
+for (sid in strata_ids) {
+  strat_data <- ecomon_summary %>% filter(stratum_id == sid)
+  display_name <- paste("EcoMon Stratum", sid)
 
-  poly_data <- cinar_summary %>% filter(polygon == pkey)
-  if (nrow(poly_data) == 0) {
-    cat(sprintf("  %s: no data, skipping\n", pkey))
+  if (nrow(strat_data) == 0) {
+    cat(sprintf("  Stratum %d: no data, skipping\n", sid))
     next
   }
 
-  cat(sprintf("  %s: %d rows, years %d-%d\n", pkey, nrow(poly_data),
-              min(poly_data$fYear), max(poly_data$fYear)))
+  cat(sprintf("  Stratum %d: %d rows, years %d-%d\n", sid, nrow(strat_data),
+              min(strat_data$fYear), max(strat_data$fYear)))
 
-  # Bathymetry annotation (constant across months/years — take first non-NA)
-  bathy_row <- poly_data %>% filter(!is.na(mean_bathy)) %>% slice(1)
+  # Bathymetry annotation
+  bathy_row <- strat_data %>% filter(!is.na(mean_bathy)) %>% slice(1)
   if (nrow(bathy_row) > 0) {
     bathy_text <- sprintf("Depth: %.0f \u00B1 %.0f m",
                           bathy_row$mean_bathy, bathy_row$sd_bathy)
@@ -203,7 +189,7 @@ for (i in seq_len(nrow(polygon_info))) {
     bathy_text <- ""
   }
 
-  years <- sort(unique(poly_data$fYear))
+  years <- sort(unique(strat_data$fYear))
 
   # n_col mapping: depth tag → sample-size column in summary
   n_col_map <- c(shallow = "n_0_80", deep = "n_below_80", total = "n_0_80")
@@ -216,20 +202,20 @@ for (i in seq_len(nrow(polygon_info))) {
     n_col    <- n_col_map[tag]
 
     # --- Overview figure ---
-    p_over <- make_overview(poly_data, mean_col, sd_col,
-                            paste0(dname, " \u2014 ", d_label))
-    ggsave(file.path(overview_dir, sprintf("CINAR_%s_%s.png", pkey, tag)),
+    p_over <- make_overview(strat_data, mean_col, sd_col,
+                            paste0(display_name, " \u2014 ", d_label))
+    ggsave(file.path(overview_dir, sprintf("EcoMon_stratum_%d_%s.png", sid, tag)),
            p_over, width = 8, height = 6, dpi = 300, bg = "white")
 
     # --- Per-year climatology figures ---
     for (yr in years) {
-      yr_rows <- poly_data %>% filter(fYear == yr)
+      yr_rows <- strat_data %>% filter(fYear == yr)
       n_val   <- max(yr_rows[[n_col]], na.rm = TRUE)
       out_path <- file.path(yearly_dir,
-                            sprintf("CINAR_%s_%d_%s.png", fname, yr, tag))
+                            sprintf("EcoMon_%d_%d_%s.png", sid, yr, tag))
 
       if (is.na(n_val) || n_val < 22) {
-        cat(sprintf("    Low n for %s %d %s (n = %s) — placeholder\n", pkey, yr, tag,
+        cat(sprintf("    Low n for stratum %d %d %s (n = %s) — placeholder\n", sid, yr, tag,
                     ifelse(is.na(n_val), "NA", n_val)))
         p_na <- ggplot() +
           annotate("text", x = 0.5, y = 0.5,
@@ -241,13 +227,13 @@ for (i in seq_len(nrow(polygon_info))) {
       }
       n_text <- sprintf("Data Points per Month = %d", n_val)
 
-      p_yr <- make_year_plot(poly_data, yr, mean_col, sd_col,
-                             d_label, dname, bathy_text, n_text)
+      p_yr <- make_year_plot(strat_data, yr, mean_col, sd_col,
+                             d_label, display_name, bathy_text, n_text)
       ggsave(out_path, p_yr, width = 8, height = 6, dpi = 300, bg = "white")
     }
   }
 }
 
-cat("\nCINAR visualization complete.\n")
-cat("  Overview figures:  plots/cinar_overview/CINAR_<key>_{shallow,deep,total}.png\n")
-cat("  Per-year figures:  plots/cinar_yearly/CINAR_<name>_<year>_{shallow,deep,total}.png\n")
+cat("\nEcoMon visualization complete.\n")
+cat("  Overview figures:  plots/ecomon_overview/EcoMon_stratum_<id>_{shallow,deep,total}.png\n")
+cat("  Per-year figures:  plots/ecomon_yearly/EcoMon_<id>_<year>_{shallow,deep,total}.png\n")
