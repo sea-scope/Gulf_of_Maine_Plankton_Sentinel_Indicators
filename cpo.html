@@ -238,33 +238,13 @@
   var elNoData  = document.getElementById("no-data");
 
   function buildDropdown(data) {
-    var cinar = [];
-    var ecomon = [];
     data.filter(FILTER).forEach(function (s) {
       stationMap[s.id] = s;
-      if (s.type === "CINAR") cinar.push(s);
-      else ecomon.push(s);
-    });
-
-    var ogCinar = document.createElement("optgroup");
-    ogCinar.label = "CINAR";
-    cinar.forEach(function (s) {
       var opt = document.createElement("option");
       opt.value = s.id;
       opt.textContent = s.label;
-      ogCinar.appendChild(opt);
+      elStation.appendChild(opt);
     });
-    if (cinar.length) elStation.appendChild(ogCinar);
-
-    var ogEcomon = document.createElement("optgroup");
-    ogEcomon.label = "EcoMon";
-    ecomon.forEach(function (s) {
-      var opt = document.createElement("option");
-      opt.value = s.id;
-      opt.textContent = s.label;
-      ogEcomon.appendChild(opt);
-    });
-    if (ecomon.length) elStation.appendChild(ogEcomon);
   }
 
   function updateSlider() {
