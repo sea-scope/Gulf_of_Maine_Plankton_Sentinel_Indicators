@@ -1,0 +1,247 @@
+{
+  "product": "sentinel_indicators",
+  "description": "WBTS and CMTS plankton sentinel indicator plots",
+  "stations": ["WBTS", "CMTS"],
+  "variables": ["CI", "CSI", "DW"],
+  "plot_types": ["phenology", "seasonal", "anomaly", "anomaly_bar"],
+  "entries": [
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "phenology",
+      "file": "WBTS/WBTS_CI_phenology.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "seasonal",
+      "file": "WBTS/WBTS_CI_seasonal.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "anomaly",
+      "file": "WBTS/WBTS_CI_anomaly.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_CI_anomaly_bar_spring.png",
+      "seasons": [
+        "spring"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_CI_anomaly_bar_summer.png",
+      "seasons": [
+        "summer"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_CI_anomaly_bar_fall.png",
+      "seasons": [
+        "fall"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_CI_anomaly_bar_winter.png",
+      "seasons": [
+        "winter"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CSI",
+      "plot_type": "phenology",
+      "file": "WBTS/WBTS_CSI_phenology.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "CSI",
+      "plot_type": "seasonal",
+      "file": "WBTS/WBTS_CSI_seasonal.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "phenology",
+      "file": "WBTS/WBTS_DW_phenology.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "seasonal",
+      "file": "WBTS/WBTS_DW_seasonal.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "anomaly",
+      "file": "WBTS/WBTS_DW_anomaly.png",
+      "seasons": ["spring", "summer", "fall", "winter"]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_DW_anomaly_bar_spring.png",
+      "seasons": [
+        "spring"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_DW_anomaly_bar_summer.png",
+      "seasons": [
+        "summer"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_DW_anomaly_bar_fall.png",
+      "seasons": [
+        "fall"
+      ]
+    },
+    {
+      "station": "WBTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "WBTS/WBTS_DW_anomaly_bar_winter.png",
+      "seasons": [
+        "winter"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "phenology",
+      "file": "CMTS/CMTS_CI_phenology.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "seasonal",
+      "file": "CMTS/CMTS_CI_seasonal.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "anomaly",
+      "file": "CMTS/CMTS_CI_anomaly.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_CI_anomaly_bar_spring.png",
+      "seasons": [
+        "spring"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_CI_anomaly_bar_summer.png",
+      "seasons": [
+        "summer"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CI",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_CI_anomaly_bar_winter.png",
+      "seasons": [
+        "winter"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CSI",
+      "plot_type": "phenology",
+      "file": "CMTS/CMTS_CSI_phenology.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "CSI",
+      "plot_type": "seasonal",
+      "file": "CMTS/CMTS_CSI_seasonal.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "phenology",
+      "file": "CMTS/CMTS_DW_phenology.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "seasonal",
+      "file": "CMTS/CMTS_DW_seasonal.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "anomaly",
+      "file": "CMTS/CMTS_DW_anomaly.png",
+      "seasons": ["spring", "summer", "winter"]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_DW_anomaly_bar_spring.png",
+      "seasons": [
+        "spring"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_DW_anomaly_bar_summer.png",
+      "seasons": [
+        "summer"
+      ]
+    },
+    {
+      "station": "CMTS",
+      "variable": "DW",
+      "plot_type": "anomaly_bar",
+      "file": "CMTS/CMTS_DW_anomaly_bar_winter.png",
+      "seasons": [
+        "winter"
+      ]
+    }
+  ]
+}

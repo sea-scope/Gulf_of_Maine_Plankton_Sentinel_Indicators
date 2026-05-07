@@ -14,6 +14,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    padding: 2rem 1rem;
     background: url('figures/NE%20shelf.png') center center / cover no-repeat fixed;
   }
   body::before {
@@ -31,18 +32,36 @@
     align-items: center;
   }
   .logo {
-    width: 440px;
-    margin-bottom: 1rem;
+    width: 380px;
+    margin-bottom: 0.75rem;
+  }
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .section-subtitle {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 1.2rem;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .section-divider {
+    width: 80%;
+    max-width: 500px;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.3);
+    margin: 1.5rem 0;
   }
   h1 {
-    font-size: 2rem;
-    margin-bottom: 0.4rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
     text-shadow: 0 2px 6px rgba(0,0,0,0.5);
   }
   p {
     font-size: 1.05rem;
     color: rgba(255,255,255,0.85);
-    margin-bottom: 2rem;
+    margin-bottom: 1.2rem;
     text-shadow: 0 1px 4px rgba(0,0,0,0.5);
   }
   .cards {
@@ -86,6 +105,19 @@
       </a>
       <a class="card" href="cpo.html">
         <h2>CPO - Stellwagen Bank Foraging Habitat</h2>
+      </a>
+    </div>
+
+    <hr class="section-divider">
+
+    <h2 class="section-title">Western Gulf of Maine Sentinel Zooplankton Indicators</h2>
+    <p class="section-subtitle">Select the time series station</p>
+    <div class="cards">
+      <a class="card" href="sentinel.html?station=WBTS">
+        <h2>MBON - Wilkinson Basin Station</h2>
+      </a>
+      <a class="card" href="sentinel.html?station=CMTS">
+        <h2>MBON - Coastal Maine Station</h2>
       </a>
     </div>
   </div>

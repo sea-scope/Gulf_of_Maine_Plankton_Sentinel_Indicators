@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel Indicators — Zooplankton Viewer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  nav a {
+    text-decoration: none;
+    color: #555;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    transition: background 0.12s;
+  }
+  nav a:hover { background: #eee; }
+  nav a.active { background: #333; color: #fff; font-weight: 600; }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 0.6rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .control-group label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  select {
+    font-size: 1rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    min-width: 180px;
+  }
+  .main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  .left-panel {
+    width: 70%;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  .right-panel {
+    width: 30%;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+    border-left: 1px solid #ddd;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #444;
+  }
+  .map-panel {
+    text-align: center;
+    margin-bottom: 1rem;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.75rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .map-panel img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .plot-panel {
+    text-align: center;
+  }
+  .plot-panel img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    background: #fff;
+  }
+  .no-data {
+    font-size: 1.1rem;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+  .right-panel h3 {
+    font-size: 1.15rem;
+    margin: 1.2rem 0 0.4rem 0;
+    color: #333;
+  }
+  .right-panel h3:first-child { margin-top: 0; }
+  .right-panel p { margin-bottom: 0.7rem; }
+  .right-panel strong { color: #333; }
+  .right-panel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0 0.7rem 0;
+    font-size: 1rem;
+  }
+  .right-panel th, .right-panel td {
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  .right-panel th {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+  }
+  .ref { font-size: 0.95rem; color: #555; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="cinar.html">CINAR</a>
+  <a href="ecomon.html">EcoMon</a>
+  <a href="cpo.html">CPO</a>
+  <a href="sentinel.html" class="active">Sentinel</a>
+</nav>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="station">Station:</label>
+    <select id="station">
+      <option value="WBTS">WBTS</option>
+      <option value="CMTS">CMTS</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="variable">Variable:</label>
+    <select id="variable">
+      <option value="CI">Calanus Abundance Index</option>
+      <option value="CSI">Copepodid Stage Index</option>
+      <option value="DW">Total Mesozooplankton Biomass</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="plottype">Plot Type:</label>
+    <select id="plottype">
+      <option value="phenology">Phenology</option>
+      <option value="anomaly_winter">Anomaly - Winter</option>
+      <option value="anomaly_spring">Anomaly - Spring</option>
+      <option value="anomaly_summer">Anomaly - Summer</option>
+      <option value="anomaly_fall">Anomaly - Fall</option>
+    </select>
+  </div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="map-panel">
+      <img src="figures/DFO_region_map_SBNMS.png" alt="Western Gulf of Maine — Time Series Stations, EcoMon Strata, and SBNMS">
+    </div>
+    <div class="plot-panel">
+      <img id="figure" alt="Sentinel indicator figure">
+      <div id="no-data" class="no-data" style="display:none;"></div>
+    </div>
+  </div>
+  <div class="right-panel">
+
+    <h3>About These Figures</h3>
+    <p>Sentinel indicators are measurements collected at fixed stations over time that track the status of key species and ecosystem processes. Because they are sampled repeatedly at the same location with consistent methods, they reveal changes in seasonal timing (phenology) and abundance that broad-scale surveys may miss.</p>
+    <p>The figures presented here are derived from two Gulf of Maine Marine Biodiversity Observation Network (MBON) time series stations operated by NERACOOS: the Wilkinson Basin Time Series Station (WBTS, 255 m depth) in the western Gulf of Maine (Lon &minus;69.8616, Lat 42.8627), and the Coastal Maine Time Series Station (CMTS, 110 m depth) in the northern coastal Gulf of Maine (Lon &minus;69.5038, Lat 43.7495). Together, these stations monitor environmental conditions, primary production, the zooplankton community, and particularly the planktonic copepod <em>Calanus finmarchicus</em>. <em>C. finmarchicus</em> is a lipid-rich species that dominates the deep-water mesozooplankton community and serves as a critical prey resource for North Atlantic right whales, herring, sand lance, and other upper trophic-level predators.</p>
+    <!-- Link: Calanus finmarchicus (not yet created) — life history, ecosystem role, fun facts -->
+    <p>Wilkinson Basin is a key overwintering habitat for <em>C. finmarchicus</em> in the western Gulf of Maine, harboring one of the most abundant shelf populations across the species&rsquo; biogeographic range. This abundance reflects the convergence of several favorable oceanographic features: a circulation that delivers <em>Calanus</em>-rich water from northern sources, optimal temperature and food availability for growth along the Maine coast in summer, and a basin deep enough to support overwintering yet too shallow for the mesopelagic predators of the adjacent open North Atlantic.</p>
+    <p>The WBTS station is positioned to monitor this population center, while the CMTS station sits within the highly productive Maine Coastal Current, capturing the coastal production that helps sustain it. The Maine Coastal Current flows generally southwestward, transporting plankton production from the Maine coast into Wilkinson Basin, Stellwagen Bank National Marine Sanctuary, and Massachusetts Bay. From Wilkinson Basin, currents continue southward through the Great South Channel to southern New England waters and Georges Bank. Together, these circulation pathways connect productive coastal waters to the deep overwintering habitat and onward to critical foraging areas for higher trophic-level predators including the North Atlantic right whale and sand lance.</p>
+    <!-- Link: Gulf of Maine connectivity (not yet created) — circulation, advective supply -->
+
+    <h3>Data Source</h3>
+    <p>Zooplankton samples are collected at each station using a 0.75 m diameter, 200 &micro;m mesh ring net towed vertically from near bottom to the surface. <em>C. finmarchicus</em> are identified to species and developmental stage under a microscope. Total mesozooplankton biomass is determined as dry weight (g m<sup>&minus;2</sup>). The WBTS station has been sampled since December 2004; the CMTS station since 2008. Sampling frequency varies but typically includes multiple cruises per season aboard the R/V <em>Gulf Challenger</em> (UNH).</p>
+    <p>Initially maintained through short-term research projects with periodic funding gaps, both stations were integrated into the Gulf of Maine MBON in 2019 with support from BOEM and the National Oceanographic Partnership Program. Since 2020, the stations have been administered by NERACOOS as part of the U.S. Integrated Ocean Observing System (IOOS), providing long-term operational stability.</p>
+    <!-- Link to not yet created page on Zooplankton Observations: methodologies, the story of the time series, videos, etc. -->
+    <p>Data management and quality control are handled by the MBON team. Source data are publicly available via ERDDAP and updated following sample processing and QA/QC.</p>
+
+    <h3 id="variable-heading">Calanus Abundance Index</h3>
+    <div id="var-CI">
+      <p>The <strong>Calanus Abundance Index (CI)</strong> tracks the abundance (no. m<sup>&minus;2</sup>) of late copepodid stages (C3 through adult C6) of <em>C. finmarchicus</em>. The index is restricted to late stages to maintain comparability with NOAA EcoMon survey data, which use a coarser 333 &micro;m mesh that allows younger stages (C1&ndash;C2) to escape. These are also the lipid-accumulating stages preyed upon by North Atlantic right whales and forage fish.</p>
+    </div>
+    <div id="var-CSI" style="display:none;">
+      <p>The <strong>Copepodid Stage Index (CSI)</strong> represents the weighted mean developmental stage of the <em>C. finmarchicus</em> population, calculated as the sum of each stage number (C1&ndash;C6) multiplied by its proportional abundance. A higher CSI indicates a population dominated by older stages; a lower value indicates younger stages.</p>
+    </div>
+    <div id="var-DW" style="display:none;">
+      <p><strong>Total Mesozooplankton Biomass</strong> measures the total dry weight (g m<sup>&minus;2</sup>) of all mesozooplankton captured in the 200 &micro;m mesh net tows. At WBTS, <em>C. finmarchicus</em> contributes 40&ndash;80% of total biomass depending on season, making this a community-level indicator strongly influenced by <em>Calanus</em> dynamics.</p>
+    </div>
+
+    <h3>Plot Types</h3>
+    <p id="phenology-desc"><strong>Phenology plots</strong> show the annual cycle of <span class="variable-name">Calanus Abundance Index</span> across day of year. All years of observations are overlaid, with the three most recent years highlighted in distinct colors and shapes. A GAM climatology line with a 95% confidence ribbon shows the expected seasonal pattern. Dashed vertical lines mark season boundaries.</p>
+    <p><strong>Seasonal anomaly plots</strong> show how each year departs from a reference-period baseline for a single season. The reference period represents pre-shift &ldquo;normal&rdquo; conditions. For WBTS, the reference period is 2004&ndash;2010 (n = 7 years); for CMTS, it is 2008&ndash;2010 (n = 3 years). The short CMTS reference period is driven by data availability; CMTS anomalies should be interpreted with more caution. Bar color indicates statistical significance: <strong>blue</strong> = significantly above reference, <strong>red</strong> = significantly below reference, <strong>gray</strong> = not significantly different from reference. Error bars show the 95% credible interval. Small dark points show individual raw observations; gold triangles indicate observations beyond the axis range.</p>
+    <p>The reference periods end in 2010, chosen to precede a major oceanographic shift in the Northwest Atlantic. Around 2010, a slowdown of the Atlantic Meridional Overturning Circulation (AMOC) and a northward shift of the Gulf Stream altered the water masses entering the Gulf of Maine. The proportion of warm Atlantic Slope Water increased relative to the cooler Labrador Slope Water that historically dominated deep inflows through the Northeast Channel. These changes have been linked to declines in <em>C. finmarchicus</em> abundance, shifts in the mesozooplankton community, and changes in the migratory habitat of North Atlantic right whales. The anomalies presented here measure departure from this pre-shift baseline.</p>
+    <!-- Link to not yet created page on the Rapidly changing Gulf of Maine: plain language explanation with figures -->
+
+    <h3>Analysis Methods</h3>
+    <p>The analysis uses Generalized Additive Models (GAMs) fit separately per station, variable, and season. Each GAM includes a smooth term for day of year (cyclic spline) and a smooth term for year, fit by REML. <em>Calanus</em> abundance and biomass are square-root transformed for model fitting; all reported values are back-transformed to the natural scale.</p>
+    <p>An anomaly is the difference between a year&rsquo;s GAM-fitted value and the mean of fitted values across the reference-period years, both evaluated at the mid-season day of year. Uncertainty is estimated by drawing 1,000 samples from the GAM coefficient posterior and computing the anomaly for each draw; the 2.5th and 97.5th percentiles form the 95% credible interval. A bar is colored blue or red only when this interval does not cross zero.</p>
+
+    <h3>How to Read the Plot</h3>
+    <p><strong>Phenology Plot</strong></p>
+    <table>
+      <tr><th>Element</th><th>Meaning</th></tr>
+      <tr><td>Colored points (recent years)</td><td>Observations from the three most recent years, each in a distinct color and shape</td></tr>
+      <tr><td>Grey points</td><td>Observations from all earlier years</td></tr>
+      <tr><td>Solid line + shaded ribbon</td><td>GAM climatology fit and 95% confidence interval</td></tr>
+      <tr><td>Dashed vertical lines</td><td>Season boundaries (Winter / Spring / Summer / Fall)</td></tr>
+    </table>
+    <p><strong>Seasonal Anomaly Bar Chart</strong></p>
+    <table>
+      <tr><th>Element</th><th>Meaning</th></tr>
+      <tr><td>Blue bar</td><td>Year significantly above the reference-period baseline</td></tr>
+      <tr><td>Red bar</td><td>Year significantly below the reference-period baseline</td></tr>
+      <tr><td>Gray bar</td><td>Year not significantly different from the baseline</td></tr>
+      <tr><td>Error bars</td><td>95% credible interval</td></tr>
+      <tr><td>Dark points</td><td>Individual raw observations (anomaly from the reference-period phenology curve at that day of year)</td></tr>
+      <tr><td>Gold triangles</td><td>Outlier observations beyond the axis range, labeled with actual value</td></tr>
+    </table>
+
+    <div id="dashboard-section">
+      <h3 id="dashboard-heading">Sentinel Dashboard</h3>
+      <p>Summary of latest available year status and recent trend for the selected station and variable, relative to the reference period. &ldquo;Status&rdquo; indicates whether the most recent year&rsquo;s modeled value is statistically above, below, or near the reference-period baseline. &ldquo;5-Year Trend&rdquo; indicates the direction of change over the most recent five years of fitted values.</p>
+      <table id="dashboard-table">
+        <thead>
+          <tr><th>Season</th><th>Status</th><th>5-Year Trend</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3>References</h3>
+    <p class="ref">Dullaert, E.C., J.A. Runge, L. Karp-Boss, S. Shellito, C.R.S. Thompson, and R.J. Jones (2026). Response of the mesozooplankton community in the western Gulf of Maine to changing oceanographic conditions: the 2010 regime shift. <em>Journal of Plankton Research</em> 48(1): fbaf066. https://doi.org/10.1093/plankt/fbaf066.</p>
+    <p class="ref">Meyer-Gutbrod, E.L., C.H. Greene, K.T.A. Davies, and D.G. Johns (2021). Ocean regime shift is driving collapse of the North Atlantic right whale population. <em>Oceanography</em> 34(3): 22&ndash;31.</p>
+    <p class="ref">Record, N.R., J.A. Runge, D.E. Pendleton, et al. (2019). Rapid climate-driven circulation changes threaten conservation of endangered North Atlantic right whales. <em>Oceanography</em> 32(2): 162&ndash;169.</p>
+    <p class="ref">Runge, J.A., et al. (2025). Zooplankton monitoring at fixed station time series in the western Gulf of Maine. <em>Progress in Oceanography</em>.</p>
+    <p class="ref">Thompson, C.R.S., et al. (2025). Modeling the advective supply of <em>Calanus finmarchicus</em> to the western Gulf of Maine. <em>Progress in Oceanography</em>.</p>
+    <p class="ref">Townsend, D.W., N.R. Pettigrew, M.A. Thomas, and S. Moore (2023). Warming waters of the Gulf of Maine: the role of shelf, slope and Gulf Stream water masses. <em>Progress in Oceanography</em> 215: 103030. https://doi.org/10.1016/j.pocean.2023.103030.</p>
+    <p class="ref">Plourde, S., et al. (2024). <em>Calanus</em> species distribution models and NARW foraging habitat in Canadian waters. DFO CSAS Research Document 2024/039.</p>
+    <p class="ref">NOAA State of the Ecosystem &mdash; <a href="https://noaa-edab.github.io/catalog/wbts_zoo.html" target="_blank">WBTS Zooplankton Catalog Entry</a></p>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  /* === Variable name map === */
+  var VAR_NAMES = {
+    CI: "Calanus Abundance Index",
+    CSI: "Copepodid Stage Index",
+    DW: "Total Mesozooplankton Biomass"
+  };
+
+  /* === Dashboard data (embedded fallback) === */
+  var DASHBOARD_DATA = [
+    {"station":"WBTS","variable":"CI","season":"spring","current_year":2025,"status":"0","trend_direction":"down"},
+    {"station":"WBTS","variable":"CI","season":"summer","current_year":2025,"status":"0","trend_direction":"down"},
+    {"station":"WBTS","variable":"CI","season":"fall","current_year":2025,"status":"-","trend_direction":"up"},
+    {"station":"WBTS","variable":"CI","season":"winter","current_year":2025,"status":"-","trend_direction":"up"},
+    {"station":"WBTS","variable":"DW","season":"spring","current_year":2025,"status":"0","trend_direction":"down"},
+    {"station":"WBTS","variable":"DW","season":"summer","current_year":2025,"status":"-","trend_direction":"down"},
+    {"station":"WBTS","variable":"DW","season":"fall","current_year":2025,"status":"-","trend_direction":"down"},
+    {"station":"WBTS","variable":"DW","season":"winter","current_year":2025,"status":"-","trend_direction":"up"},
+    {"station":"CMTS","variable":"CI","season":"spring","current_year":2025,"status":"0","trend_direction":"down"},
+    {"station":"CMTS","variable":"CI","season":"summer","current_year":2025,"status":"-","trend_direction":"down"},
+    {"station":"CMTS","variable":"CI","season":"winter","current_year":2025,"status":"-","trend_direction":"down"},
+    {"station":"CMTS","variable":"DW","season":"spring","current_year":2025,"status":"+","trend_direction":"up"},
+    {"station":"CMTS","variable":"DW","season":"summer","current_year":2025,"status":"-","trend_direction":"down"},
+    {"station":"CMTS","variable":"DW","season":"winter","current_year":2025,"status":"-","trend_direction":"down"}
+  ];
+
+  /* === Metadata fallback === */
+  var METADATA_FALLBACK = {"product":"sentinel_indicators","stations":["WBTS","CMTS"],"variables":["CI","CSI","DW"],"plot_types":["phenology","seasonal","anomaly","anomaly_bar"],"entries":[{"station":"WBTS","variable":"CI","plot_type":"phenology","file":"WBTS/WBTS_CI_phenology.png"},{"station":"WBTS","variable":"CI","plot_type":"anomaly_bar","file":"WBTS/WBTS_CI_anomaly_bar_spring.png","seasons":["spring"]},{"station":"WBTS","variable":"CI","plot_type":"anomaly_bar","file":"WBTS/WBTS_CI_anomaly_bar_summer.png","seasons":["summer"]},{"station":"WBTS","variable":"CI","plot_type":"anomaly_bar","file":"WBTS/WBTS_CI_anomaly_bar_fall.png","seasons":["fall"]},{"station":"WBTS","variable":"CI","plot_type":"anomaly_bar","file":"WBTS/WBTS_CI_anomaly_bar_winter.png","seasons":["winter"]},{"station":"WBTS","variable":"CSI","plot_type":"phenology","file":"WBTS/WBTS_CSI_phenology.png"},{"station":"WBTS","variable":"DW","plot_type":"phenology","file":"WBTS/WBTS_DW_phenology.png"},{"station":"WBTS","variable":"DW","plot_type":"anomaly_bar","file":"WBTS/WBTS_DW_anomaly_bar_spring.png","seasons":["spring"]},{"station":"WBTS","variable":"DW","plot_type":"anomaly_bar","file":"WBTS/WBTS_DW_anomaly_bar_summer.png","seasons":["summer"]},{"station":"WBTS","variable":"DW","plot_type":"anomaly_bar","file":"WBTS/WBTS_DW_anomaly_bar_fall.png","seasons":["fall"]},{"station":"WBTS","variable":"DW","plot_type":"anomaly_bar","file":"WBTS/WBTS_DW_anomaly_bar_winter.png","seasons":["winter"]},{"station":"CMTS","variable":"CI","plot_type":"phenology","file":"CMTS/CMTS_CI_phenology.png"},{"station":"CMTS","variable":"CI","plot_type":"anomaly_bar","file":"CMTS/CMTS_CI_anomaly_bar_spring.png","seasons":["spring"]},{"station":"CMTS","variable":"CI","plot_type":"anomaly_bar","file":"CMTS/CMTS_CI_anomaly_bar_summer.png","seasons":["summer"]},{"station":"CMTS","variable":"CI","plot_type":"anomaly_bar","file":"CMTS/CMTS_CI_anomaly_bar_winter.png","seasons":["winter"]},{"station":"CMTS","variable":"CSI","plot_type":"phenology","file":"CMTS/CMTS_CSI_phenology.png"},{"station":"CMTS","variable":"DW","plot_type":"phenology","file":"CMTS/CMTS_DW_phenology.png"},{"station":"CMTS","variable":"DW","plot_type":"anomaly_bar","file":"CMTS/CMTS_DW_anomaly_bar_spring.png","seasons":["spring"]},{"station":"CMTS","variable":"DW","plot_type":"anomaly_bar","file":"CMTS/CMTS_DW_anomaly_bar_summer.png","seasons":["summer"]},{"station":"CMTS","variable":"DW","plot_type":"anomaly_bar","file":"CMTS/CMTS_DW_anomaly_bar_winter.png","seasons":["winter"]}]};
+
+  /* === DOM elements === */
+  var elStation  = document.getElementById("station");
+  var elVariable = document.getElementById("variable");
+  var elPlotType = document.getElementById("plottype");
+  var elImg      = document.getElementById("figure");
+  var elNoData   = document.getElementById("no-data");
+  var elVarHeading    = document.getElementById("variable-heading");
+  var elDashSection   = document.getElementById("dashboard-section");
+  var elDashHeading   = document.getElementById("dashboard-heading");
+  var elDashTbody     = document.querySelector("#dashboard-table tbody");
+  var elPhenologyDesc = document.getElementById("phenology-desc");
+  var varDivs = {
+    CI:  document.getElementById("var-CI"),
+    CSI: document.getElementById("var-CSI"),
+    DW:  document.getElementById("var-DW")
+  };
+
+  /* === URL parameter handling === */
+  var params = new URLSearchParams(window.location.search);
+  var initStation = params.get("station");
+  if (initStation && (initStation === "WBTS" || initStation === "CMTS")) {
+    elStation.value = initStation;
+  }
+
+  /* === Status/trend mappers === */
+  var STATUS_MAP = { "+": "Above Reference", "-": "Below Reference", "0": "Near Reference" };
+  var TREND_MAP  = { up: "Increasing", down: "Decreasing", flat: "No Trend" };
+  var SEASON_ORDER = ["winter", "spring", "summer", "fall"];
+
+  /* === Dashboard data store === */
+  var dashboardData = DASHBOARD_DATA;
+
+  /* Try to load live dashboard CSV, fall back to embedded */
+  function loadDashboardCSV() {
+    fetch("summaries/sentinel/sentinel_dashboard.csv")
+      .then(function (r) { return r.text(); })
+      .then(function (text) {
+        var rows = text.trim().split("\n");
+        if (rows.length < 2) return;
+        var headers = rows[0].replace(/"/g, "").split(",");
+        var parsed = [];
+        for (var i = 1; i < rows.length; i++) {
+          var vals = rows[i].replace(/"/g, "").split(",");
+          var obj = {};
+          for (var j = 0; j < headers.length; j++) {
+            obj[headers[j]] = vals[j];
+          }
+          obj.current_year = parseInt(obj.current_year, 10);
+          parsed.push(obj);
+        }
+        dashboardData = parsed;
+        updateAll();
+      })
+      .catch(function () { /* use embedded fallback */ });
+  }
+
+  /* === Update functions === */
+  function updateImage() {
+    var station  = elStation.value;
+    var variable = elVariable.value;
+    var plottype = elPlotType.value;
+
+    /* Check unavailable combinations */
+    if (variable === "CSI" && plottype !== "phenology") {
+      elImg.style.display = "none";
+      elNoData.style.display = "";
+      elNoData.textContent = "Anomaly plots are not applicable for the Copepodid Stage Index.";
+      return;
+    }
+    if (station === "CMTS" && plottype === "anomaly_fall") {
+      elImg.style.display = "none";
+      elNoData.style.display = "";
+      elNoData.textContent = "Fall is not applicable for this station.";
+      return;
+    }
+
+    /* Build image path */
+    var path;
+    if (plottype === "phenology") {
+      path = "plots/sentinel/" + station + "/" + station + "_" + variable + "_phenology.png";
+    } else {
+      var season = plottype.replace("anomaly_", "");
+      path = "plots/sentinel/" + station + "/" + station + "_" + variable + "_anomaly_bar_" + season + ".png";
+    }
+
+    elImg.style.display = "";
+    elNoData.style.display = "none";
+    elImg.src = path;
+  }
+
+  function updateRightPanel() {
+    var variable = elVariable.value;
+    var station  = elStation.value;
+    var varName  = VAR_NAMES[variable];
+
+    /* Update variable heading */
+    elVarHeading.textContent = varName;
+
+    /* Show/hide variable descriptions */
+    for (var key in varDivs) {
+      varDivs[key].style.display = key === variable ? "" : "none";
+    }
+
+    /* Update phenology description with variable name */
+    var spans = elPhenologyDesc.getElementsByClassName("variable-name");
+    for (var i = 0; i < spans.length; i++) {
+      spans[i].textContent = varName;
+    }
+
+    /* Dashboard section: hide for CSI */
+    if (variable === "CSI") {
+      elDashSection.style.display = "none";
+      return;
+    }
+    elDashSection.style.display = "";
+
+    /* Filter dashboard rows */
+    var rows = dashboardData.filter(function (d) {
+      return d.station === station && d.variable === variable;
+    });
+
+    /* Exclude fall for CMTS */
+    if (station === "CMTS") {
+      rows = rows.filter(function (d) { return d.season !== "fall"; });
+    }
+
+    /* Sort by season order */
+    rows.sort(function (a, b) {
+      return SEASON_ORDER.indexOf(a.season) - SEASON_ORDER.indexOf(b.season);
+    });
+
+    /* Update heading */
+    var year = rows.length > 0 ? rows[0].current_year : "";
+    elDashHeading.textContent = "Sentinel Dashboard \u2014 " + year + " " + varName;
+
+    /* Render table rows */
+    elDashTbody.innerHTML = "";
+    rows.forEach(function (d) {
+      var tr = document.createElement("tr");
+      var tdSeason = document.createElement("td");
+      tdSeason.textContent = d.season.charAt(0).toUpperCase() + d.season.slice(1);
+      var tdStatus = document.createElement("td");
+      tdStatus.textContent = STATUS_MAP[d.status] || d.status;
+      var tdTrend = document.createElement("td");
+      tdTrend.textContent = TREND_MAP[d.trend_direction] || d.trend_direction;
+      tr.appendChild(tdSeason);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdTrend);
+      elDashTbody.appendChild(tr);
+    });
+  }
+
+  function updateAll() {
+    updateImage();
+    updateRightPanel();
+  }
+
+  /* === Image error handler === */
+  elImg.addEventListener("error", function () {
+    elImg.style.display = "none";
+    elNoData.style.display = "";
+    elNoData.textContent = "No data available for this combination.";
+  });
+
+  /* === Event listeners === */
+  elStation.addEventListener("change", updateAll);
+  elVariable.addEventListener("change", updateAll);
+  elPlotType.addEventListener("change", updateAll);
+
+  /* === Initialize === */
+  updateAll();
+  loadDashboardCSV();
+})();
+</script>
+</body>
+</html>
