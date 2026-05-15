@@ -205,8 +205,8 @@
     <p><strong>Sea Surface Temperature.</strong> NOAA Optimum Interpolation SST (OISST) v2.1, daily 0.25&deg; resolution, 1982&ndash;present (Huang et al. 2021). OISST blends in situ buoy and ship observations with AVHRR and other satellite radiances to produce a gap-free analysis. Distributed via the NOAA CoastWatch ERDDAP server.</p>
 
     <h3>Regional Environmental Indices</h3>
-    <p>The satellite data are high-resolution gridded products &mdash; the figures here distill them into place-based seasonal indices designed to track year-to-year change and provide historical context for any given observation. CINAR polygons focus on the Bay of Fundy and adjacent shelf regions, defined to align with NOAA EcoMon survey strata while reflecting local hydrographic features and regular DFO sampling along the Brown&rsquo;s Bank and Halifax lines. These are the same polygons used for the <em>Calanus finmarchicus</em> biomass aggregation, so satellite indicators can be compared directly against modeled biomass within the same footprint.</p>
-    <p>Within each polygon, daily satellite pixels are coverage-fraction weighted and aggregated into 8-day composites following the MODIS standard window convention (46 windows per year starting on day-of-year 1, 9, 17, &hellip;). 4 km OC-CCI pixels are first averaged into ~12 km blocks before extraction to give equal weight to each sub-area and mitigate bias toward systematically cloud-clear regions. Per-window uncertainty is reported as a pooled pixel-level standard deviation that combines within-day spatial heterogeneity and between-day temporal variability.</p>
+    <p>The satellite data are high-resolution gridded products &mdash; the figures here distill them into place-based seasonal indices designed to track year-to-year change and provide historical context for any given observation. CINAR polygons focus on the Bay of Fundy and adjacent shelf regions, defined to align with DFO and NOAA ecosystem surveys and to reflect local hydrographic features and regular DFO sampling along the Brown&rsquo;s Bank and Halifax lines. These are the same polygons used for the <em>Calanus finmarchicus</em> biomass aggregation, so satellite indicators can be compared directly against modeled biomass within the same footprint.</p>
+    <p>Within each polygon, daily satellite values are aggregated into 8-day composites following the MODIS standard window convention (46 windows per year, starting on day-of-year 1, 9, 17, &hellip;). For chlorophyll <em>a</em>, native 4 km OC-CCI pixels are first averaged into ~12 km blocks to give equal weight to each sub-area and mitigate bias toward systematically cloud-clear regions; SST is kept on its native 0.25&deg; grid. Per-window uncertainty is reported as the pooled standard deviation across all (block &times; day) observations within the polygon during the 8-day window, capturing both within-day spatial heterogeneity (differences among blocks on the same day) and between-day temporal variability (drift of the polygon mean across the window&rsquo;s cloud-free days).</p>
 
     <h3>How to Read the Plot</h3>
     <table>
@@ -214,14 +214,14 @@
       <tr><td>Light grey ribbon</td><td>Full historical range across all years (climatological min/max)</td></tr>
       <tr><td>Dark grey ribbon</td><td>Climatological mean &plusmn; 1 SD across years</td></tr>
       <tr><td>Dashed grey line</td><td>Climatological 8-day mean</td></tr>
-      <tr><td>Coloured line + error bars</td><td>Selected focus year (green for chlorophyll <em>a</em>, blue for SST); error bars show the pooled 8-day pixel SD within the polygon</td></tr>
+      <tr><td>Coloured line + error bars</td><td>Selected focus year (green for chlorophyll <em>a</em>, blue for SST); error bars show the 8-day pooled SD across all (block &times; day) observations inside the polygon</td></tr>
     </table>
     <p>The maximum and total pixels observed for the year are annotated on the figure. Windows are flagged as &ldquo;sparse&rdquo; when fewer than a minimum number of valid pixel-days contribute to the composite, in which case no value is shown for that window. Plots are marked &ldquo;Sparse data&rdquo; when the selected year has insufficient pixel coverage across the season.</p>
 
     <h3>References</h3>
-    <p class="ref">Sathyendranath, S., et al. (2019). An ocean-colour time series for use in climate studies: the experience of the Ocean-Colour Climate Change Initiative (OC-CCI). <em>Sensors</em>, 19(19), 4285.</p>
-    <p class="ref">Huang, B., et al. (2021). Improvements of the Daily Optimum Interpolation Sea Surface Temperature (DOISST) Version 2.1. <em>Journal of Climate</em>, 34(8), 2923&ndash;2939.</p>
-    <p class="ref">Runge, J. A., et al. (2025). Zooplankton monitoring at fixed station time series in the Gulf of Maine. <em>Frontiers in Marine Science</em>.</p>
+    <p class="ref">Sathyendranath, S., Brewin, R.J., Brockmann, C., Brotas, V., Calton, B., Chuprin, A., Cipollini, P., Couto, A.B., Dingle, J., Doerffer, R. and Donlon, C., 2019. An ocean-colour time series for use in climate studies: the experience of the ocean-colour climate change initiative (OC-CCI). <em>Sensors</em>, 19(19), p.4285.</p>
+    <p class="ref">Huang, B., Liu, C., Banzon, V., Freeman, E., Graham, G., Hankins, B., Smith, T. and Zhang, H.M., 2021. Improvements of the daily optimum interpolation sea surface temperature (DOISST) version 2.1. <em>Journal of Climate</em>, 34(8), pp.2923&ndash;2939.</p>
+    <p class="ref">Runge, J.A., Thompson, C.R., Shellito, S., Dullaert, E.C., Honda, I.A., Vandemark, D., Pugh, D., Young-Morse, R., Motyka, J., Jones, R.J. and Boss, L.K., 2025. Zooplankton monitoring at fixed station time series records responses of the foundation species, <em>Calanus finmarchicus</em>, to seasonal and multiannual drivers in the western Gulf of Maine. <em>ICES Journal of Marine Science</em>, 82(4), p.fsaf037.</p>
 
   </div>
 </div>
