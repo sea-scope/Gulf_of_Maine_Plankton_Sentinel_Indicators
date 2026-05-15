@@ -9,9 +9,9 @@ Interactive visualization of Gulf of Maine plankton data products, including mod
 | Product | Description | Status |
 |---------|-------------|--------|
 | **SPM Biomass** | Modeled *C. finmarchicus* biomass (CIV-CVI) from DFO GLORYS12v1-based SDM, aggregated into CINAR polygons and EcoMon strata | Complete |
-| **Sentinel Indicators** | WBTS/CMTS station time series: Calanus abundance, stage index, mesozooplankton biomass | In development |
+| **Sentinel Indicators** | WBTS/CMTS station time series: Calanus abundance, stage index, mesozooplankton biomass | Complete |
+| **Satellite SST/Chl** | OC-CCI v6 chlorophyll *a* and NOAA OISST v2.1 sea surface temperature, 8-day composites over CINAR polygons, CPO polygons, and 5 km buffers at WBTS/CMTS | Complete |
 | **Environmental Time Series** | Placeholder | Future |
-| **Satellite SST/Chl** | Placeholder | Future |
 
 ## Repository Structure
 
@@ -20,29 +20,37 @@ GoM_Plankton_Sentinel_Indicators/
   GoM_Plankton_Sentinel_Indicators.Rproj  -- R project file (open first)
   run_pipeline.R              -- Master orchestrator (all products)
   run_spm_biomass.R           -- SPM biomass pipeline (Steps 1-4g)
-  run_sentinel.R              -- Sentinel indicators pipeline (stub)
+  run_sentinel.R              -- Sentinel indicators pipeline (WP4a-4c)
+  run_satellite.R             -- Satellite SST/Chl pipeline (WP6)
   R/
     01_spm_biomass/           -- SPM biomass processing and visualization
     02_sentinel_indicators/   -- Sentinel indicator pipeline (WP4a-c)
     03_environmental_timeseries/  -- Future
-    04_satellite_products/    -- Future
+    04_satellite_products/    -- Satellite ingest/extract/composite/plot
     shared/                   -- Shared utilities (populated when needed)
   data/
     spm_biomass/              -- Polygon boundaries, strata coordinates
     sentinel/
       raw/                    -- Raw station Excel files (gitignored)
       prepared/               -- Cleaned station CSVs (committed)
+    satellite/
+      raw/                    -- ERDDAP NetCDF cache (gitignored, ~2.4 GB)
   summaries/
     spm_biomass/              -- DFO_biomass_summary.csv
     sentinel/                 -- Sentinel summary outputs
+    satellite/                -- 8-day composites + per polygon-day daily means
   plots/
     spm_biomass/              -- SPM biomass viewer plots + metadata JSON
     sentinel/                 -- Sentinel indicator plots
+    satellite/                -- Per-year + overview climatology plots by region
   figures/                    -- Publication maps (shared across products)
   index.html                  -- Landing page
-  cinar.html                  -- CINAR viewer
-  ecomon.html                 -- EcoMon viewer
-  cpo.html                    -- CPO viewer
+  cinar.html                  -- CINAR biomass viewer
+  ecomon.html                 -- EcoMon biomass viewer
+  cpo.html                    -- CPO biomass viewer
+  sentinel.html               -- Sentinel zooplankton indicators viewer
+  satellite_cinar.html        -- Satellite SST/Chl viewer, CINAR region
+  satellite_cpo.html          -- Satellite SST/Chl viewer, CPO region
 ```
 
 ## SPM Biomass Pipeline

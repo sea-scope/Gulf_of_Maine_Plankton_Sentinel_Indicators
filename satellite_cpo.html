@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satellite Indicators — CPO Region</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  nav a {
+    text-decoration: none;
+    color: #555;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    transition: background 0.12s;
+  }
+  nav a:hover { background: #eee; }
+  nav a.active { background: #333; color: #fff; font-weight: 600; }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 0.6rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .control-group label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  select, input[type="range"] {
+    font-size: 1rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+  }
+  select { min-width: 220px; }
+  input[type="range"] { width: 200px; cursor: pointer; }
+  #year-display {
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 2.5rem;
+  }
+  .main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  .left-panel {
+    width: 70%;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  .right-panel {
+    width: 30%;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    background: #fff;
+    border-left: 1px solid #ddd;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #444;
+  }
+  .map-panel {
+    text-align: center;
+    margin-bottom: 1rem;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.75rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .map-panel img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .plot-panel { text-align: center; }
+  .plot-panel img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    background: #fff;
+  }
+  .no-data {
+    font-size: 1.1rem;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+  .right-panel h3 {
+    font-size: 1.15rem;
+    margin: 1.2rem 0 0.4rem 0;
+    color: #333;
+  }
+  .right-panel h3:first-child { margin-top: 0; }
+  .right-panel p { margin-bottom: 0.7rem; }
+  .right-panel strong { color: #333; }
+  .right-panel table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0 0.7rem 0;
+    font-size: 1rem;
+  }
+  .right-panel th, .right-panel td {
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  .right-panel th {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+  }
+  .ref { font-size: 0.95rem; color: #555; margin-bottom: 0.4rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="cinar.html">CINAR</a>
+  <a href="ecomon.html">EcoMon</a>
+  <a href="cpo.html">CPO</a>
+  <a href="sentinel.html">Sentinel</a>
+  <a href="satellite_cinar.html">Satellite CINAR</a>
+  <a href="satellite_cpo.html" class="active">Satellite CPO</a>
+</nav>
+
+<div class="controls">
+  <div class="control-group">
+    <label for="region">Region:</label>
+    <select id="region">
+      <optgroup label="Observation Area Polygons">
+        <option value="cpo|SBNMS">Stellwagen Bank NMS</option>
+        <option value="cpo|EM_35">EcoMon Stratum 35</option>
+        <option value="cpo|EM_36">EcoMon Stratum 36</option>
+        <option value="cpo|EM_37">EcoMon Stratum 37</option>
+        <option value="cpo|EM_40">EcoMon Stratum 40</option>
+      </optgroup>
+      <optgroup label="Time Series Stations">
+        <option value="stations|WBTS">MBON Wilkinson Basin Station (WBTS)</option>
+        <option value="stations|CMTS">MBON Coastal Maine Station (CMTS)</option>
+      </optgroup>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="variable">Variable:</label>
+    <select id="variable">
+      <option value="sst">Sea Surface Temperature (&deg;C)</option>
+      <option value="chlor_a">Chlorophyll a</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="year">Year:</label>
+    <input type="range" id="year">
+    <span id="year-display"></span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+    <div class="map-panel">
+      <img src="figures/DFO_region_map_SBNMS.png" alt="CPO region map">
+    </div>
+    <div class="plot-panel">
+      <img id="figure" alt="Satellite climatology figure">
+      <div id="no-data" class="no-data" style="display:none;">No data available for this combination.</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+
+    <h3>About These Figures</h3>
+    <p>Each figure shows the seasonal cycle of a satellite-derived environmental variable &mdash; sea surface temperature (SST) or chlorophyll <em>a</em> &mdash; within a selected region for a single year, plotted against the full multi-decadal climatology. These plots provide environmental context for the regional <em>Calanus finmarchicus</em> biomass and sentinel zooplankton indicators presented elsewhere on this site. SST tracks the thermal habitat that sets metabolic rates, developmental timing, and species ranges; chlorophyll <em>a</em> is a proxy for phytoplankton biomass and serves as a first-order indicator of food available to grazing copepods.</p>
+
+    <h3>Data Source</h3>
+    <p><strong>Chlorophyll <em>a</em>.</strong> ESA Ocean Colour Climate Change Initiative (OC-CCI) version 6 daily Level-3 product, ~4 km spatial resolution, 1998&ndash;present. OC-CCI is a multi-sensor merged product (SeaWiFS, MODIS-Aqua, MERIS, VIIRS, OLCI) bias-corrected to a common reference, providing a consistent long-term record suitable for trend and climatology analysis. Distributed via the NOAA NEFSC ERDDAP server.</p>
+    <p><strong>Sea Surface Temperature.</strong> NOAA Optimum Interpolation SST (OISST) v2.1, daily 0.25&deg; resolution, 1982&ndash;present (Huang et al. 2021). OISST blends in situ buoy and ship observations with AVHRR and other satellite radiances to produce a gap-free analysis. Distributed via the NOAA CoastWatch ERDDAP server.</p>
+
+    <h3>Regional Environmental Indices</h3>
+    <p>The satellite data are high-resolution gridded products &mdash; the figures here distill them into place-based seasonal indices designed to track year-to-year change and provide historical context for any given observation. Two complementary spatial frameworks are used:</p>
+    <p><strong>Observation Area Polygons.</strong> The CPO viewer footprint covers the Stellwagen Bank National Marine Sanctuary (SBNMS) and the four adjacent NOAA EcoMon survey strata (35, 36, 37, 40) that bracket the southwestern Gulf of Maine, Massachusetts Bay, and the Great South Channel. These are the same polygons used for the <em>Calanus finmarchicus</em> biomass aggregation, so satellite indicators can be compared directly against modeled biomass within the same footprint.</p>
+    <p><strong>Time Series Stations.</strong> Two Gulf of Maine Marine Biodiversity Observation Network (MBON) stations operated by NERACOOS are included for environmental context: the <strong>Wilkinson Basin Time Series Station (WBTS)</strong> in the western Gulf of Maine, and the <strong>Coastal Maine Time Series Station (CMTS)</strong> in the northern coastal Gulf of Maine. A 5 km buffer around each station coordinate is used as the satellite extraction footprint. The 5 km buffer was chosen so that buffers remain entirely offshore while still covering a small cluster of OC-CCI pixels per station for stable polygon means. These are the same stations featured in the Sentinel Zooplankton Indicators viewer, and together with the SBNMS / EcoMon polygons they trace the southwestward-flowing Maine Coastal Current pathway that connects coastal production to offshore foraging habitat.</p>
+    <p>Within each polygon or buffer, daily satellite pixels are coverage-fraction weighted and aggregated into 8-day composites following the MODIS standard window convention (46 windows per year starting on day-of-year 1, 9, 17, &hellip;). For large polygons, 4 km OC-CCI pixels are first averaged into ~12 km blocks before extraction to give equal weight to each sub-area and mitigate bias toward systematically cloud-clear regions. Per-window uncertainty is reported as a pooled pixel-level standard deviation that combines within-day spatial heterogeneity and between-day temporal variability.</p>
+
+    <h3>How to Read the Plot</h3>
+    <table>
+      <tr><th>Element</th><th>Meaning</th></tr>
+      <tr><td>Light grey ribbon</td><td>Full historical range across all years (climatological min/max)</td></tr>
+      <tr><td>Dark grey ribbon</td><td>Climatological mean &plusmn; 1 SD across years</td></tr>
+      <tr><td>Dashed grey line</td><td>Climatological 8-day mean</td></tr>
+      <tr><td>Coloured line + error bars</td><td>Selected focus year (green for chlorophyll <em>a</em>, blue for SST); error bars show the pooled 8-day pixel SD within the polygon</td></tr>
+    </table>
+    <p>The maximum and total pixels observed for the year are annotated on the figure. Windows are flagged as &ldquo;sparse&rdquo; when fewer than a minimum number of valid pixel-days contribute to the composite, in which case no value is shown for that window. Plots are marked &ldquo;Sparse data&rdquo; when the selected year has insufficient pixel coverage across the season.</p>
+
+    <h3>References</h3>
+    <p class="ref">Sathyendranath, S., et al. (2019). An ocean-colour time series for use in climate studies: the experience of the Ocean-Colour Climate Change Initiative (OC-CCI). <em>Sensors</em>, 19(19), 4285.</p>
+    <p class="ref">Huang, B., et al. (2021). Improvements of the Daily Optimum Interpolation Sea Surface Temperature (DOISST) Version 2.1. <em>Journal of Climate</em>, 34(8), 2923&ndash;2939.</p>
+    <p class="ref">Runge, J. A., et al. (2025). Zooplankton monitoring at fixed station time series in the Gulf of Maine. <em>Frontiers in Marine Science</em>.</p>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var YEAR_RANGE = {
+    chlor_a: { min: 1998, max: 2025 },
+    sst:     { min: 1982, max: 2025 }
+  };
+
+  var elRegion  = document.getElementById("region");
+  var elVar     = document.getElementById("variable");
+  var elYear    = document.getElementById("year");
+  var elYearVal = document.getElementById("year-display");
+  var elImg     = document.getElementById("figure");
+  var elNoData  = document.getElementById("no-data");
+
+  function parseRegion() {
+    var parts = elRegion.value.split("|");
+    return { set: parts[0], polygon_id: parts[1] };
+  }
+
+  function updateSlider() {
+    var v = elVar.value;
+    var range = YEAR_RANGE[v];
+    elYear.min = range.min;
+    elYear.max = range.max;
+    var cur = parseInt(elYear.value, 10);
+    if (isNaN(cur) || cur < range.min) elYear.value = range.min;
+    else if (cur > range.max) elYear.value = range.max;
+    elYearVal.textContent = elYear.value;
+  }
+
+  function updateImage() {
+    var r = parseRegion();
+    var v = elVar.value;
+    var y = elYear.value;
+    var path = "plots/satellite/" + r.set + "/" + r.set + "_" + r.polygon_id + "_" + v + "_" + y + ".png";
+    elImg.style.display = "";
+    elNoData.style.display = "none";
+    elImg.src = path;
+  }
+
+  elImg.addEventListener("error", function () {
+    elImg.style.display = "none";
+    elNoData.style.display = "";
+    elNoData.textContent = "No data available for this combination.";
+  });
+
+  elRegion.addEventListener("change", updateImage);
+  elVar.addEventListener("change", function () { updateSlider(); updateImage(); });
+  elYear.addEventListener("input", function () { elYearVal.textContent = elYear.value; updateImage(); });
+
+  updateSlider();
+  updateImage();
+})();
+</script>
+</body>
+</html>
