@@ -5,5 +5,6 @@
 
 source("run_spm_biomass.R")
 source("run_sentinel.R")
+source("run_satellite.R")
 
 cat("\nAll pipelines complete.\n")

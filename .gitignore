@@ -36,6 +36,11 @@ cache/
 data/sentinel/raw/
 
 # -------------------------------------------------------
+# Raw satellite data (NetCDF cache from ERDDAP, ~5-15 GB full record)
+# -------------------------------------------------------
+data/satellite/raw/
+
+# -------------------------------------------------------
 # Internal working documents
 # -------------------------------------------------------
 Context/
